@@ -7,6 +7,7 @@ import NavLinks from "@/components/NavLinks";
 import Toasts from "@/components/Toasts";
 import ThemeToggle from "@/components/ThemeToggle";
 import ResetAccount from "@/components/ResetAccount";
+import DataBackup from "@/components/DataBackup";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { state, hydrated } = useStore();
@@ -60,11 +61,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="mt-auto hidden sm:flex flex-col gap-1">
           <ThemeToggle />
+          <DataBackup />
           <ResetAccount />
         </div>
-        {/* Mobile: theme toggle + reset stay reachable */}
+        {/* Mobile: theme toggle + data + reset stay reachable */}
         <div className="sm:hidden flex flex-col gap-1">
           <ThemeToggle />
+          <DataBackup />
           <ResetAccount />
         </div>
       </aside>

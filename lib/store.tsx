@@ -106,6 +106,7 @@ interface StoreApi {
   ) => void;
   toggleEventDone: (id: string) => void;
   resetAll: () => void;
+  importData: (next: AppState) => void;
 }
 
 const StoreContext = createContext<StoreApi | null>(null);
@@ -443,6 +444,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setState(EMPTY_STATE);
   }, []);
 
+  // Replace all data from an imported backup (normalized by lib/backup.ts).
+  const importData = useCallback((next: AppState) => {
+    stateRef.current = next;
+    setState(next);
+  }, []);
+
   // --- XP-bearing actions (read snapshot, commit once) ----------------
 
   const logActivity = useCallback<StoreApi["logActivity"]>(
@@ -581,6 +588,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     updateEvent,
     toggleEventDone,
     resetAll,
+    importData,
   };
 
   return <StoreContext.Provider value={api}>{children}</StoreContext.Provider>;

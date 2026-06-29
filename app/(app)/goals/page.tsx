@@ -6,11 +6,14 @@ import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import Modal from "@/components/Modal";
 import ProgressRing from "@/components/ProgressRing";
+import Loading from "@/components/Loading";
 
 export default function GoalsPage() {
-  const { state, hydrated, addGoal, addGoalProgress, deleteGoal } = useStore();
+  const { state, hydrated, addGoal, addGoalProgress, deleteGoal, updateGoal } =
+    useStore();
 
   const [showNew, setShowNew] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [target, setTarget] = useState("");
   const [unit, setUnit] = useState("");
@@ -23,12 +26,44 @@ export default function GoalsPage() {
     e.preventDefault();
     const t = parseFloat(target);
     if (!title.trim() || isNaN(t) || t <= 0) return;
-    addGoal(title.trim(), t, unit.trim(), deadline || null);
+    if (editId) {
+      updateGoal(editId, {
+        title: title.trim(),
+        targetValue: t,
+        unit: unit.trim(),
+        deadline: deadline || null,
+      });
+    } else {
+      addGoal(title.trim(), t, unit.trim(), deadline || null);
+    }
+    closeForm();
+  }
+
+  function openNew() {
+    setEditId(null);
     setTitle("");
     setTarget("");
     setUnit("");
     setDeadline("");
+    setShowNew(true);
+  }
+
+  function openEdit(g: (typeof state.goals)[number]) {
+    setEditId(g.id);
+    setTitle(g.title);
+    setTarget(String(g.targetValue));
+    setUnit(g.unit);
+    setDeadline(g.deadline ?? "");
     setShowNew(false);
+  }
+
+  function closeForm() {
+    setShowNew(false);
+    setEditId(null);
+    setTitle("");
+    setTarget("");
+    setUnit("");
+    setDeadline("");
   }
 
   function submitProgress(e: React.FormEvent) {
@@ -43,7 +78,7 @@ export default function GoalsPage() {
   const active = state.goals.filter((g) => g.status === "active");
   const done = state.goals.filter((g) => g.status === "done");
 
-  if (!hydrated) return null;
+  if (!hydrated) return <Loading />;
 
   return (
     <div>
@@ -52,7 +87,7 @@ export default function GoalsPage() {
         icon="🎯"
         subtitle={`${active.length} active · ${done.length} completed`}
         action={
-          <button onClick={() => setShowNew(true)} className="btn-primary">
+          <button onClick={openNew} className="btn-primary">
             + New
           </button>
         }
@@ -106,6 +141,13 @@ export default function GoalsPage() {
                       >
                         + Add
                       </button>
+                      <button
+                        onClick={() => openEdit(g)}
+                        className="text-muted hover:text-ink text-sm px-1"
+                        aria-label="Edit goal"
+                      >
+                        ✏️
+                      </button>
                     </>
                   )}
                   <button
@@ -124,8 +166,12 @@ export default function GoalsPage() {
         </div>
       )}
 
-      {/* New goal modal */}
-      <Modal open={showNew} onClose={() => setShowNew(false)} title="New goal">
+      {/* New / edit goal modal */}
+      <Modal
+        open={showNew || editId != null}
+        onClose={closeForm}
+        title={editId ? "Edit goal" : "New goal"}
+      >
         <form onSubmit={submitNew} className="space-y-4">
           <div>
             <label className="label" htmlFor="goal-title">Goal</label>
@@ -173,8 +219,12 @@ export default function GoalsPage() {
               onChange={(e) => setDeadline(e.target.value)}
             />
           </div>
-          <p className="text-xs text-muted">Completing a goal earns +50 XP.</p>
-          <button type="submit" className="btn-primary w-full">Create goal</button>
+          {!editId && (
+            <p className="text-xs text-muted">Completing a goal earns +50 XP.</p>
+          )}
+          <button type="submit" className="btn-primary w-full">
+            {editId ? "Save changes" : "Create goal"}
+          </button>
         </form>
       </Modal>
 

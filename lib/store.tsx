@@ -58,9 +58,14 @@ interface StoreApi {
     xpPerLog: number
   ) => void;
   deleteActivity: (id: string) => void;
+  updateActivity: (
+    id: string,
+    patch: { title: string; unit: string; xpPerLog: number }
+  ) => void;
   logActivity: (activityId: string, value: number, note?: string) => void;
   addHabit: (title: string) => void;
   deleteHabit: (id: string) => void;
+  updateHabit: (id: string, patch: { title: string }) => void;
   toggleHabitToday: (habitId: string) => void;
   addGoal: (
     title: string,
@@ -70,6 +75,15 @@ interface StoreApi {
   ) => void;
   addGoalProgress: (goalId: string, delta: number) => void;
   deleteGoal: (id: string) => void;
+  updateGoal: (
+    id: string,
+    patch: {
+      title: string;
+      targetValue: number;
+      unit: string;
+      deadline: string | null;
+    }
+  ) => void;
   addEvent: (input: {
     title: string;
     type: EventType;
@@ -79,6 +93,17 @@ interface StoreApi {
     notes?: string;
   }) => void;
   deleteEvent: (id: string) => void;
+  updateEvent: (
+    id: string,
+    patch: {
+      title: string;
+      type: EventType;
+      date: string;
+      startTime: string | null;
+      endTime: string | null;
+      notes?: string;
+    }
+  ) => void;
   toggleEventDone: (id: string) => void;
   resetAll: () => void;
 }
@@ -249,6 +274,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  // Edits update user-entered fields only — no XP awarded (that stays with
+  // logActivity). Past logs keep the xp they were awarded at log time.
+  const updateActivity = useCallback<StoreApi["updateActivity"]>(
+    (id, patch) => {
+      mutate((prev) => ({
+        ...prev,
+        activities: prev.activities.map((a) =>
+          a.id === id ? { ...a, ...patch } : a
+        ),
+      }));
+    },
+    [mutate]
+  );
+
   const addHabit = useCallback(
     (title: string) => {
       mutate((prev) => ({
@@ -277,6 +316,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const updateHabit = useCallback<StoreApi["updateHabit"]>(
+    (id, patch) => {
+      mutate((prev) => ({
+        ...prev,
+        habits: prev.habits.map((h) =>
+          h.id === id ? { ...h, ...patch } : h
+        ),
+      }));
+    },
+    [mutate]
+  );
+
   const addGoal = useCallback<StoreApi["addGoal"]>(
     (title, targetValue, unit, deadline) => {
       mutate((prev) => ({
@@ -302,6 +353,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const deleteGoal = useCallback((id: string) => {
     setState((s) => ({ ...s, goals: s.goals.filter((g) => g.id !== id) }));
   }, []);
+
+  // Edit goal fields only. We deliberately don't flip status or award XP here:
+  // lowering a target below current progress just shows 100% (the ring clamps),
+  // and completion XP stays tied to addGoalProgress.
+  const updateGoal = useCallback<StoreApi["updateGoal"]>(
+    (id, patch) => {
+      if (patch.targetValue <= 0) return; // guard, mirrors addGoal
+      mutate((prev) => ({
+        ...prev,
+        goals: prev.goals.map((g) =>
+          g.id === id ? { ...g, ...patch } : g
+        ),
+      }));
+    },
+    [mutate]
+  );
 
   const addEvent = useCallback<StoreApi["addEvent"]>(
     (input) => {
@@ -329,6 +396,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const deleteEvent = useCallback((id: string) => {
     setState((s) => ({ ...s, events: s.events.filter((e) => e.id !== id) }));
   }, []);
+
+  const updateEvent = useCallback<StoreApi["updateEvent"]>(
+    (id, patch) => {
+      mutate((prev) => ({
+        ...prev,
+        events: prev.events.map((e) =>
+          e.id === id ? { ...e, ...patch } : e
+        ),
+      }));
+    },
+    [mutate]
+  );
 
   const toggleEventDone = useCallback<StoreApi["toggleEventDone"]>(
     (id) => {
@@ -487,15 +566,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setDisplayName,
     addActivity,
     deleteActivity,
+    updateActivity,
     logActivity,
     addHabit,
     deleteHabit,
+    updateHabit,
     toggleHabitToday,
     addGoal,
     addGoalProgress,
     deleteGoal,
+    updateGoal,
     addEvent,
     deleteEvent,
+    updateEvent,
     toggleEventDone,
     resetAll,
   };

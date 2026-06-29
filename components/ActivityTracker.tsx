@@ -12,6 +12,7 @@ import EmptyState from "@/components/EmptyState";
 import Modal from "@/components/Modal";
 import TrendChart from "@/components/TrendChart";
 import ProgressRing from "@/components/ProgressRing";
+import Loading from "@/components/Loading";
 
 export default function ActivityTracker({
   type,
@@ -28,13 +29,20 @@ export default function ActivityTracker({
   defaultUnit: string;
   unitOptions: string[];
 }) {
-  const { state, hydrated, addActivity, deleteActivity, logActivity } =
-    useStore();
+  const {
+    state,
+    hydrated,
+    addActivity,
+    deleteActivity,
+    updateActivity,
+    logActivity,
+  } = useStore();
 
   const [showNew, setShowNew] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [logFor, setLogFor] = useState<string | null>(null);
 
-  // New-activity form
+  // New / edit activity form
   const [name, setName] = useState("");
   const [unit, setUnit] = useState(defaultUnit);
   const [xp, setXp] = useState(10);
@@ -84,11 +92,36 @@ export default function ActivityTracker({
   function submitNew(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    addActivity(type, name.trim(), unit, xp);
+    if (editId) {
+      updateActivity(editId, { title: name.trim(), unit, xpPerLog: xp });
+    } else {
+      addActivity(type, name.trim(), unit, xp);
+    }
+    closeForm();
+  }
+
+  function openNew() {
+    setEditId(null);
     setName("");
     setUnit(defaultUnit);
     setXp(10);
+    setShowNew(true);
+  }
+
+  function openEdit(a: (typeof activities)[number]) {
+    setEditId(a.id);
+    setName(a.title);
+    setUnit(a.unit);
+    setXp(a.xpPerLog);
     setShowNew(false);
+  }
+
+  function closeForm() {
+    setShowNew(false);
+    setEditId(null);
+    setName("");
+    setUnit(defaultUnit);
+    setXp(10);
   }
 
   function submitLog(e: React.FormEvent) {
@@ -103,7 +136,7 @@ export default function ActivityTracker({
 
   const logTarget = activities.find((a) => a.id === logFor);
 
-  if (!hydrated) return null;
+  if (!hydrated) return <Loading />;
 
   return (
     <div>
@@ -112,7 +145,7 @@ export default function ActivityTracker({
         icon={icon}
         subtitle={`${logs.length} sessions logged`}
         action={
-          <button onClick={() => setShowNew(true)} className="btn-primary">
+          <button onClick={openNew} className="btn-primary">
             + New
           </button>
         }
@@ -196,6 +229,13 @@ export default function ActivityTracker({
                       + Log
                     </button>
                     <button
+                      onClick={() => openEdit(a)}
+                      className="text-muted hover:text-ink text-sm px-1"
+                      aria-label="Edit activity"
+                    >
+                      ✏️
+                    </button>
+                    <button
                       onClick={() => {
                         if (confirm(`Delete "${a.title}" and its logs?`))
                           deleteActivity(a.id);
@@ -244,8 +284,16 @@ export default function ActivityTracker({
         </div>
       )}
 
-      {/* New activity modal */}
-      <Modal open={showNew} onClose={() => setShowNew(false)} title={`New ${title.toLowerCase()} activity`}>
+      {/* New / edit activity modal */}
+      <Modal
+        open={showNew || editId != null}
+        onClose={closeForm}
+        title={
+          editId
+            ? `Edit ${title.toLowerCase()} activity`
+            : `New ${title.toLowerCase()} activity`
+        }
+      >
         <form onSubmit={submitNew} className="space-y-4">
           <div>
             <label className="label" htmlFor="act-name">Name</label>
@@ -284,7 +332,9 @@ export default function ActivityTracker({
               />
             </div>
           </div>
-          <button type="submit" className="btn-primary w-full">Create activity</button>
+          <button type="submit" className="btn-primary w-full">
+            {editId ? "Save changes" : "Create activity"}
+          </button>
         </form>
       </Modal>
 

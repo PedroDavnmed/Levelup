@@ -13,7 +13,11 @@ export default function Toasts() {
   const { toasts, dismissToast } = useStore();
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 w-72">
+    <div
+      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 w-72"
+      role="status"
+      aria-live="polite"
+    >
       {toasts.map((t) => (
         <button
           key={t.id}

@@ -4,6 +4,7 @@ import { useStore } from "@/lib/store";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { rankForCount, RANKS } from "@/lib/ranks";
 import PageHeader from "@/components/PageHeader";
+import Loading from "@/components/Loading";
 
 export default function AchievementsPage() {
   const { state, hydrated } = useStore();
@@ -13,7 +14,7 @@ export default function AchievementsPage() {
   const count = unlocked.size;
   const rankInfo = rankForCount(count);
 
-  if (!hydrated) return null;
+  if (!hydrated) return <Loading />;
 
   return (
     <div>

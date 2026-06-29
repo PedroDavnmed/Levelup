@@ -20,11 +20,12 @@ import {
 } from "@/lib/calendar";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
+import Loading from "@/components/Loading";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 export default function CalendarPage() {
-  const { state, hydrated, addEvent, deleteEvent, toggleEventDone } =
+  const { state, hydrated, addEvent, deleteEvent, updateEvent, toggleEventDone } =
     useStore();
 
   const today = todayStr();
@@ -33,8 +34,9 @@ export default function CalendarPage() {
   const [cursor, setCursor] = useState({ year: init.year, month: init.month });
   const [selectedDate, setSelectedDate] = useState(today);
 
-  // Add-event form
+  // Add / edit-event form
   const [showAdd, setShowAdd] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [type, setType] = useState<EventType>("task");
   const [date, setDate] = useState(today);
@@ -49,6 +51,7 @@ export default function CalendarPage() {
   );
 
   function openAdd(forDate: string) {
+    setEditId(null);
     setDate(forDate);
     setTitle("");
     setType("task");
@@ -59,18 +62,37 @@ export default function CalendarPage() {
     setShowAdd(true);
   }
 
+  function openEdit(ev: CalendarEvent) {
+    setEditId(ev.id);
+    setTitle(ev.title);
+    setType(ev.type);
+    setDate(ev.date);
+    setAllDay(ev.startTime === null);
+    setStartTime(ev.startTime ?? "09:00");
+    setEndTime(ev.endTime ?? "10:00");
+    setNotes(ev.notes ?? "");
+    setShowAdd(true);
+  }
+
+  function closeForm() {
+    setShowAdd(false);
+    setEditId(null);
+  }
+
   function submitAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    addEvent({
+    const fields = {
       title: title.trim(),
       type,
       date,
       startTime: allDay ? null : startTime,
       endTime: allDay ? null : endTime || null,
       notes: notes.trim() || undefined,
-    });
-    setShowAdd(false);
+    };
+    if (editId) updateEvent(editId, fields);
+    else addEvent(fields);
+    closeForm();
   }
 
   function goMonth(delta: number) {
@@ -87,7 +109,7 @@ export default function CalendarPage() {
     setSelectedDate(today);
   }
 
-  if (!hydrated) return null;
+  if (!hydrated) return <Loading />;
 
   const dayEvents = eventsForDate(state.events, selectedDate);
   const allDayEvents = dayEvents.filter((e) => eventHour(e) === null);
@@ -148,11 +170,16 @@ export default function CalendarPage() {
           onAdd={() => openAdd(selectedDate)}
           onToggle={toggleEventDone}
           onDelete={deleteEvent}
+          onEdit={openEdit}
         />
       )}
 
-      {/* Add event modal */}
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="New entry">
+      {/* Add / edit event modal */}
+      <Modal
+        open={showAdd}
+        onClose={closeForm}
+        title={editId ? "Edit entry" : "New entry"}
+      >
         <form onSubmit={submitAdd} className="space-y-4">
           <div>
             <label className="label" htmlFor="ev-title">Title</label>
@@ -237,7 +264,7 @@ export default function CalendarPage() {
           </div>
 
           <button type="submit" className="btn-primary w-full">
-            Add to calendar
+            {editId ? "Save changes" : "Add to calendar"}
           </button>
         </form>
       </Modal>
@@ -343,6 +370,7 @@ function DayView({
   onAdd,
   onToggle,
   onDelete,
+  onEdit,
 }: {
   date: string;
   allDayEvents: CalendarEvent[];
@@ -352,6 +380,7 @@ function DayView({
   onAdd: () => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (e: CalendarEvent) => void;
 }) {
   return (
     <div className="card p-4">
@@ -375,7 +404,7 @@ function DayView({
           <p className="text-xs uppercase tracking-wide text-muted mb-1">All day</p>
           <div className="space-y-1.5">
             {allDayEvents.map((e) => (
-              <EventRow key={e.id} e={e} onToggle={onToggle} onDelete={onDelete} />
+              <EventRow key={e.id} e={e} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
             ))}
           </div>
         </div>
@@ -402,7 +431,7 @@ function DayView({
               </span>
               <div className="flex-1 space-y-1.5">
                 {hourEvents.map((e) => (
-                  <EventRow key={e.id} e={e} onToggle={onToggle} onDelete={onDelete} />
+                  <EventRow key={e.id} e={e} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
                 ))}
               </div>
             </div>
@@ -417,10 +446,12 @@ function EventRow({
   e,
   onToggle,
   onDelete,
+  onEdit,
 }: {
   e: CalendarEvent;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (e: CalendarEvent) => void;
 }) {
   const style = EVENT_STYLE[e.type];
   return (
@@ -450,6 +481,13 @@ function EventRow({
           {e.notes ? ` · ${e.notes}` : ""}
         </p>
       </div>
+      <button
+        onClick={() => onEdit(e)}
+        className="text-muted hover:text-ink text-sm px-1 shrink-0"
+        aria-label="Edit entry"
+      >
+        ✏️
+      </button>
       <button
         onClick={() => onDelete(e.id)}
         className="text-muted hover:text-red-500 text-sm px-1 shrink-0"

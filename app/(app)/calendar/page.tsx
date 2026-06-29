@@ -24,6 +24,22 @@ import Loading from "@/components/Loading";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
+// Quick-pick start times for the add/edit form (the native time field is fiddly
+// to type into). Picking one sets the start and bumps the end to one hour later.
+const TIME_PRESETS: { label: string; time: string }[] = [
+  { label: "Morning", time: "09:00" },
+  { label: "Noon", time: "12:00" },
+  { label: "Afternoon", time: "14:00" },
+  { label: "Evening", time: "18:00" },
+];
+
+/** Add one hour to an "HH:MM" string (wraps past midnight). */
+function plusOneHour(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const nextH = (h + 1) % 24;
+  return `${String(nextH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 export default function CalendarPage() {
   const { state, hydrated, addEvent, deleteEvent, updateEvent, toggleEventDone } =
     useStore();
@@ -77,6 +93,13 @@ export default function CalendarPage() {
   function closeForm() {
     setShowAdd(false);
     setEditId(null);
+  }
+
+  // Quick-pick: set start, nudge end to an hour later, and ensure it's timed.
+  function pickTime(time: string) {
+    setAllDay(false);
+    setStartTime(time);
+    setEndTime(plusOneHour(time));
   }
 
   function submitAdd(e: React.FormEvent) {
@@ -228,26 +251,42 @@ export default function CalendarPage() {
           </label>
 
           {!allDay && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label" htmlFor="ev-start">Start</label>
-                <input
-                  id="ev-start"
-                  type="time"
-                  className="input"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label" htmlFor="ev-start">Start</label>
+                  <input
+                    id="ev-start"
+                    type="time"
+                    className="input"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="label" htmlFor="ev-end">End</label>
+                  <input
+                    id="ev-end"
+                    type="time"
+                    className="input"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="label" htmlFor="ev-end">End</label>
-                <input
-                  id="ev-end"
-                  type="time"
-                  className="input"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
+              <div className="flex flex-wrap gap-1.5">
+                {TIME_PRESETS.map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => pickTime(p.time)}
+                    className={`btn-ghost border border-line px-2.5 py-1 text-xs ${
+                      startTime === p.time ? "border-brand-500 text-brand-600" : ""
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
             </div>
           )}

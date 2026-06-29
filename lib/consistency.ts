@@ -1,5 +1,5 @@
 import type { Habit, HabitCompletion } from "./types";
-import { todayStr, dayDiff, addDays } from "./date";
+import { todayStr, dayDiff, addDays, localDateOf } from "./date";
 
 /**
  * "Show-up" consistency for activity trackers (training / study):
@@ -38,7 +38,7 @@ export function habitConsistency(
   let expected = 0;
   let completed = 0;
   for (const h of habits) {
-    const created = h.createdAt.slice(0, 10);
+    const created = localDateOf(h.createdAt);
     const start = created > windowStart ? created : windowStart;
     const days = dayDiff(start, today) + 1;
     for (let i = 0; i < days; i++) {

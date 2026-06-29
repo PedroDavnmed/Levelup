@@ -5,6 +5,7 @@ import { useStore } from "@/lib/store";
 import type { ActivityType } from "@/lib/types";
 import { sumByDay } from "@/lib/aggregate";
 import { activeDaysConsistency, consistencyColor } from "@/lib/consistency";
+import { localDateOf } from "@/lib/date";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
@@ -55,10 +56,20 @@ export default function ActivityTracker({
     [state.logs, activityIds]
   );
 
-  const totalValue = logs.reduce((s, l) => s + l.value, 0);
+  // Totals grouped by unit — activities of one type can use different units
+  // (e.g. min, reps, km), so a single combined sum would be meaningless.
+  const totalsByUnit = useMemo(() => {
+    const unitOf = new Map(activities.map((a) => [a.id, a.unit]));
+    const totals = new Map<string, number>();
+    for (const l of logs) {
+      const u = unitOf.get(l.activityId) ?? "";
+      totals.set(u, (totals.get(u) ?? 0) + l.value);
+    }
+    return [...totals.entries()];
+  }, [logs, activities]);
   const chartData = sumByDay(logs, 14);
   const consistency = activeDaysConsistency(
-    logs.map((l) => l.loggedAt.slice(0, 10)),
+    logs.map((l) => localDateOf(l.loggedAt)),
     30
   );
 
@@ -132,12 +143,32 @@ export default function ActivityTracker({
               </div>
             </div>
             <StatCard label="Total sessions" value={logs.length} />
-            <StatCard
-              label="Total logged"
-              value={totalValue}
-              sub={activities[0]?.unit}
-              accent="text-brand-600"
-            />
+            <div className="card p-5">
+              <p className="text-sm text-muted">Total logged</p>
+              {totalsByUnit.length <= 1 ? (
+                <>
+                  <p className="mt-1 text-3xl font-bold text-brand-600">
+                    {totalsByUnit[0]?.[1] ?? 0}
+                  </p>
+                  {totalsByUnit[0] && (
+                    <p className="mt-0.5 text-xs text-muted">
+                      {totalsByUnit[0][0]}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="mt-1 space-y-0.5">
+                  {totalsByUnit.map(([unit, total]) => (
+                    <p key={unit} className="text-xl font-bold text-brand-600">
+                      {total}{" "}
+                      <span className="text-xs font-normal text-muted">
+                        {unit}
+                      </span>
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
 
           <section className="card p-5">

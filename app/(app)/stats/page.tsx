@@ -13,6 +13,7 @@ import {
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import ProgressRing from "@/components/ProgressRing";
+import { localDateOf } from "@/lib/date";
 
 function ConsistencyCard({
   label,
@@ -46,7 +47,7 @@ export default function StatsPage() {
     const studyMinutes = studyLogs.reduce((s, l) => s + l.value, 0);
 
     const activeDays = new Set<string>();
-    state.logs.forEach((l) => activeDays.add(l.loggedAt.slice(0, 10)));
+    state.logs.forEach((l) => activeDays.add(localDateOf(l.loggedAt)));
     state.completions.forEach((c) => activeDays.add(c.completedOn));
     state.events
       .filter((e) => e.type === "task" && e.done)
@@ -57,11 +58,11 @@ export default function StatsPage() {
       studyLogs,
       studyMinutes,
       trainConsistency: activeDaysConsistency(
-        trainLogs.map((l) => l.loggedAt.slice(0, 10)),
+        trainLogs.map((l) => localDateOf(l.loggedAt)),
         30
       ),
       studyConsistency: activeDaysConsistency(
-        studyLogs.map((l) => l.loggedAt.slice(0, 10)),
+        studyLogs.map((l) => localDateOf(l.loggedAt)),
         30
       ),
       habitConsistency: habitConsistency(state.habits, state.completions, 30),

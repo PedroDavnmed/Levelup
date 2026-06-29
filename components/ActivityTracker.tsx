@@ -156,6 +156,11 @@ export default function ActivityTracker({
           icon={icon}
           title={`No ${title.toLowerCase()} activities yet`}
           hint={`Create one (like "${type === "training" ? "Gym session" : "Read textbook"}") to start logging and earning XP.`}
+          action={
+            <button onClick={openNew} className="btn-primary">
+              + New activity
+            </button>
+          }
         />
       ) : (
         <div className="space-y-6">

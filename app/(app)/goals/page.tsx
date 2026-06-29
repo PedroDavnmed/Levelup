@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useStore } from "@/lib/store";
+import { todayStr } from "@/lib/date";
+import { shortDate } from "@/lib/calendar";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import Modal from "@/components/Modal";
@@ -98,6 +100,11 @@ export default function GoalsPage() {
           icon="🎯"
           title="No goals yet"
           hint='Set a target like "Run 50 km this month" and watch the ring fill as you log progress.'
+          action={
+            <button onClick={openNew} className="btn-primary">
+              + New goal
+            </button>
+          }
         />
       ) : (
         <div className="space-y-3">
@@ -123,7 +130,21 @@ export default function GoalsPage() {
                   </p>
                   <p className="text-xs text-muted">
                     {g.currentValue} / {g.targetValue} {g.unit}
-                    {g.deadline && ` · by ${g.deadline}`}
+                    {g.deadline && (
+                      <span
+                        className={
+                          g.status === "active" && g.deadline < todayStr()
+                            ? "text-red-500"
+                            : ""
+                        }
+                      >
+                        {" · "}
+                        by {shortDate(g.deadline)}
+                        {g.status === "active" && g.deadline < todayStr()
+                          ? " · overdue"
+                          : ""}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

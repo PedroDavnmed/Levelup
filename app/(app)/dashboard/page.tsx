@@ -152,6 +152,19 @@ export default function DashboardPage() {
           icon="🚀"
           title="Let's get your stats moving"
           hint="Add a training or study activity, create a habit, or set a goal — every action earns XP and fills your charts."
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link href="/training" className="btn-primary">
+                Add training
+              </Link>
+              <Link href="/habits" className="btn-ghost border border-line">
+                New habit
+              </Link>
+              <Link href="/goals" className="btn-ghost border border-line">
+                Set a goal
+              </Link>
+            </div>
+          }
         />
       )}
 

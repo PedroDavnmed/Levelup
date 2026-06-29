@@ -74,6 +74,11 @@ export default function HabitsPage() {
           icon="🔥"
           title="No habits yet"
           hint='Add a daily habit like "Drink water" or "Read 10 pages" and keep the streak alive.'
+          action={
+            <button onClick={openNew} className="btn-primary">
+              + New habit
+            </button>
+          }
         />
       ) : (
         <div className="space-y-6">

@@ -255,25 +255,20 @@ export default function CalendarPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label" htmlFor="ev-start">Start</label>
-                  <input
+                  <TimeSelect
                     id="ev-start"
-                    type="time"
-                    className="input"
                     value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
+                    onChange={setStartTime}
                   />
                 </div>
                 <div>
                   <label className="label" htmlFor="ev-end">End</label>
-                  <input
-                    id="ev-end"
-                    type="time"
-                    className="input"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                  />
+                  <TimeSelect id="ev-end" value={endTime} onChange={setEndTime} />
                 </div>
               </div>
+              <p className="text-xs text-muted">
+                {formatTime(startTime)} – {formatTime(endTime)}
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {TIME_PRESETS.map((p) => (
                   <button
@@ -307,6 +302,59 @@ export default function CalendarPage() {
           </button>
         </form>
       </Modal>
+    </div>
+  );
+}
+
+const MINUTE_STEPS = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+
+/** 24-hour hour + minute dropdowns (so 13–23 are directly selectable, unlike
+ *  the native 12-hour time picker). Stores/reads an "HH:MM" string. */
+function TimeSelect({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [h, m] = value.split(":");
+  // Keep an off-grid minute (e.g. from older data) selectable.
+  const minutes = MINUTE_STEPS.includes(m)
+    ? MINUTE_STEPS
+    : [...MINUTE_STEPS, m].sort();
+  return (
+    <div className="flex items-center gap-1.5">
+      <select
+        id={id}
+        className="input"
+        value={h}
+        onChange={(e) => onChange(`${e.target.value}:${m}`)}
+        aria-label="Hour"
+      >
+        {HOURS.map((hr) => {
+          const hh = String(hr).padStart(2, "0");
+          return (
+            <option key={hh} value={hh}>
+              {hh}
+            </option>
+          );
+        })}
+      </select>
+      <span className="text-muted">:</span>
+      <select
+        className="input"
+        value={m}
+        onChange={(e) => onChange(`${h}:${e.target.value}`)}
+        aria-label="Minute"
+      >
+        {minutes.map((mm) => (
+          <option key={mm} value={mm}>
+            {mm}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,19 +9,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Clean & minimal: light surfaces, soft pastel accents
-        bg: "#f7f8fa",
-        surface: "#ffffff",
-        ink: "#1f2430",
-        muted: "#6b7280",
-        line: "#e7e9ee",
+        // Semantic tokens — driven by CSS variables so they flip in dark mode.
+        bg: "rgb(var(--c-bg) / <alpha-value>)",
+        surface: "rgb(var(--c-surface) / <alpha-value>)",
+        ink: "rgb(var(--c-ink) / <alpha-value>)",
+        muted: "rgb(var(--c-muted) / <alpha-value>)",
+        line: "rgb(var(--c-line) / <alpha-value>)",
         brand: {
-          50: "#eef4ff",
+          50: "rgb(var(--c-brand-50) / <alpha-value>)",
           100: "#dbe6ff",
           400: "#7b9cff",
           500: "#5b7cfa",
           600: "#4763e6",
         },
+        // Fixed accents (read fine on light and dark surfaces).
         mint: "#7fd1ae",
         peach: "#ffb59e",
         lilac: "#c3b4f5",

@@ -11,6 +11,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import { useTheme } from "@/components/ThemeProvider";
 
 export interface ChartPoint {
   label: string;
@@ -28,6 +29,18 @@ export default function TrendChart({
   color?: string;
   height?: number;
 }) {
+  const { isDark } = useTheme();
+
+  const grid = isDark ? "#2a303d" : "#eef0f4";
+  const axis = isDark ? "#8b94a6" : "#9aa3b2";
+  const tooltipStyle = {
+    borderRadius: 12,
+    border: `1px solid ${isDark ? "#2a303d" : "#e7e9ee"}`,
+    backgroundColor: isDark ? "#181c26" : "#ffffff",
+    color: isDark ? "#e9ecf2" : "#1f2430",
+    fontSize: 12,
+  };
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       {type === "area" ? (
@@ -38,12 +51,10 @@ export default function TrendChart({
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eef0f4" vertical={false} />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke="#9aa3b2" />
-          <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="#9aa3b2" width={36} allowDecimals={false} />
-          <Tooltip
-            contentStyle={{ borderRadius: 12, border: "1px solid #e7e9ee", fontSize: 12 }}
-          />
+          <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke={axis} />
+          <YAxis tickLine={false} axisLine={false} fontSize={11} stroke={axis} width={36} allowDecimals={false} />
+          <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: tooltipStyle.color }} />
           <Area
             type="monotone"
             dataKey="value"
@@ -54,12 +65,13 @@ export default function TrendChart({
         </AreaChart>
       ) : (
         <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eef0f4" vertical={false} />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke="#9aa3b2" />
-          <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="#9aa3b2" width={36} allowDecimals={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke={axis} />
+          <YAxis tickLine={false} axisLine={false} fontSize={11} stroke={axis} width={36} allowDecimals={false} />
           <Tooltip
-            cursor={{ fill: "#f3f5f9" }}
-            contentStyle={{ borderRadius: 12, border: "1px solid #e7e9ee", fontSize: 12 }}
+            cursor={{ fill: isDark ? "#222735" : "#f3f5f9" }}
+            contentStyle={tooltipStyle}
+            labelStyle={{ color: tooltipStyle.color }}
           />
           <Bar dataKey="value" fill={color} radius={[6, 6, 0, 0]} />
         </BarChart>

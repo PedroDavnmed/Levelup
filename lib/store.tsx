@@ -18,6 +18,7 @@ import type {
 import { XP_REWARDS } from "./types";
 import { levelForXp } from "./gamification";
 import { evaluateNewAchievements, ACHIEVEMENTS } from "./achievements";
+import { rankForCount } from "./ranks";
 import { nextStreak } from "./streaks";
 import { todayStr } from "./date";
 
@@ -35,7 +36,7 @@ const EMPTY_STATE: AppState = {
 
 export interface Toast {
   id: string;
-  kind: "level" | "badge" | "xp";
+  kind: "level" | "badge" | "xp" | "rank";
   title: string;
   detail?: string;
   icon: string;
@@ -175,6 +176,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             detail: def.name,
           });
         }
+      }
+
+      // Rank up (driven by total achievements unlocked).
+      const rankBefore = rankForCount(prev.achievements.length).rank;
+      const rankAfter = rankForCount(next.achievements.length).rank;
+      if (rankAfter.name !== rankBefore.name) {
+        pushToast({
+          kind: "rank",
+          icon: rankAfter.icon,
+          title: `Rank up — ${rankAfter.name}!`,
+          detail: "Keep unlocking achievements",
+        });
       }
     },
     [pushToast]

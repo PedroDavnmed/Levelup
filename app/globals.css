@@ -4,12 +4,30 @@
 
 :root {
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Light theme (RGB channels for Tailwind alpha support) */
+  --c-bg: 247 248 250;
+  --c-surface: 255 255 255;
+  --c-ink: 31 36 48;
+  --c-muted: 107 114 128;
+  --c-line: 231 233 238;
+  --c-brand-50: 238 244 255;
+}
+
+.dark {
+  /* Dark theme */
+  --c-bg: 14 17 23;
+  --c-surface: 24 28 38;
+  --c-ink: 233 236 242;
+  --c-muted: 148 156 170;
+  --c-line: 42 48 61;
+  --c-brand-50: 30 39 64;
 }
 
 html,
 body {
-  background-color: theme("colors.bg");
-  color: theme("colors.ink");
+  background-color: rgb(var(--c-bg));
+  color: rgb(var(--c-ink));
   -webkit-font-smoothing: antialiased;
 }
 
@@ -27,7 +45,7 @@ body {
     @apply btn bg-transparent text-muted hover:bg-brand-50 hover:text-brand-600;
   }
   .input {
-    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100;
+    @apply w-full rounded-xl border border-line bg-surface text-ink px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100;
   }
   .label {
     @apply block text-sm font-medium text-ink mb-1.5;

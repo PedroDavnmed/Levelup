@@ -24,7 +24,7 @@ export default function ProgressRing({
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="#eceff4"
+          className="stroke-line"
           strokeWidth={stroke}
         />
         <circle

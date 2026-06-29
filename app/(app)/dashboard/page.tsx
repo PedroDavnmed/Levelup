@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 import { useStore } from "@/lib/store";
 import { levelProgress } from "@/lib/gamification";
+import { rankForCount } from "@/lib/ranks";
+import { ACHIEVEMENTS } from "@/lib/achievements";
 import { todayStr } from "@/lib/date";
 import { xpByDay, lastNDates } from "@/lib/aggregate";
 import StatCard from "@/components/StatCard";
@@ -25,6 +27,9 @@ export default function DashboardPage() {
   ).length;
   const activeGoals = state.goals.filter((g) => g.status === "active").length;
   const xpData = xpByDay(state.logs, state.completions, 14);
+
+  const unlockedCount = state.achievements.length;
+  const rankInfo = rankForCount(unlockedCount);
 
   function editName() {
     const name = prompt("Your display name:", displayName);
@@ -77,6 +82,42 @@ export default function DashboardPage() {
           <div
             className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-700"
             style={{ width: `${prog.pct}%` }}
+          />
+        </div>
+      </section>
+
+      {/* Rank */}
+      <section className="card p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span
+              className="grid h-12 w-12 place-items-center rounded-xl text-2xl"
+              style={{ backgroundColor: `${rankInfo.rank.color}22` }}
+            >
+              {rankInfo.rank.icon}
+            </span>
+            <div>
+              <p className="font-semibold text-ink">
+                {rankInfo.rank.name} rank
+              </p>
+              <p className="text-xs text-muted">
+                {unlockedCount} / {ACHIEVEMENTS.length} achievements unlocked
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-muted text-right">
+            {rankInfo.next
+              ? `${rankInfo.toNext} more to ${rankInfo.next.name}`
+              : "Max rank reached 🎉"}
+          </p>
+        </div>
+        <div className="mt-3 h-2.5 rounded-full bg-bg overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{
+              width: `${rankInfo.pct}%`,
+              backgroundColor: rankInfo.rank.color,
+            }}
           />
         </div>
       </section>

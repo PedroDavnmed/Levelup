@@ -2,13 +2,16 @@
 
 import { useStore } from "@/lib/store";
 import { levelProgress } from "@/lib/gamification";
+import { rankForCount } from "@/lib/ranks";
 import NavLinks from "@/components/NavLinks";
 import Toasts from "@/components/Toasts";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { state, hydrated, resetAll } = useStore();
   const { displayName, totalXp } = state.profile;
   const prog = levelProgress(totalXp);
+  const { rank } = rankForCount(state.achievements.length);
 
   function handleReset() {
     if (
@@ -32,9 +35,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Profile / level card */}
         <div className="hidden sm:block rounded-xl bg-brand-50 px-3.5 py-3">
-          <p className="text-sm font-semibold text-ink truncate">
-            {hydrated ? displayName : "…"}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-ink truncate">
+              {hydrated ? displayName : "…"}
+            </p>
+            {hydrated && (
+              <span
+                className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                style={{ backgroundColor: `${rank.color}22`, color: rank.color }}
+                title={`${rank.name} rank`}
+              >
+                {rank.icon} {rank.name}
+              </span>
+            )}
+          </div>
           <div className="mt-2 flex items-center justify-between text-xs">
             <span className="font-medium text-brand-600">
               Level {hydrated ? prog.level : 1}
@@ -43,7 +57,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {hydrated ? `${prog.into}/${prog.span} XP` : ""}
             </span>
           </div>
-          <div className="mt-1.5 h-2 rounded-full bg-white overflow-hidden">
+          <div className="mt-1.5 h-2 rounded-full bg-bg overflow-hidden">
             <div
               className="h-full rounded-full bg-brand-500 transition-all duration-500"
               style={{ width: `${hydrated ? prog.pct : 0}%` }}
@@ -53,13 +67,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         <NavLinks />
 
-        <div className="mt-auto hidden sm:block">
+        <div className="mt-auto hidden sm:flex flex-col gap-1">
+          <ThemeToggle />
           <button
             onClick={handleReset}
             className="btn-ghost w-full justify-start text-xs"
           >
             ↺ Reset data
           </button>
+        </div>
+        {/* Mobile: theme toggle stays reachable */}
+        <div className="sm:hidden">
+          <ThemeToggle />
         </div>
       </aside>
 

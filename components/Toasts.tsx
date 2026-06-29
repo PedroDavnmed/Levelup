@@ -6,6 +6,7 @@ const STYLES: Record<string, string> = {
   level: "border-amber/40 bg-amber/10",
   badge: "border-lilac/50 bg-lilac/10",
   xp: "border-mint/50 bg-mint/10",
+  rank: "border-peach/50 bg-peach/10",
 };
 
 export default function Toasts() {

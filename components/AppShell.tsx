@@ -6,22 +6,13 @@ import { rankForCount } from "@/lib/ranks";
 import NavLinks from "@/components/NavLinks";
 import Toasts from "@/components/Toasts";
 import ThemeToggle from "@/components/ThemeToggle";
+import ResetAccount from "@/components/ResetAccount";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { state, hydrated, resetAll } = useStore();
+  const { state, hydrated } = useStore();
   const { displayName, totalXp } = state.profile;
   const prog = levelProgress(totalXp);
   const { rank } = rankForCount(state.achievements.length);
-
-  function handleReset() {
-    if (
-      confirm(
-        "Reset all your local data (activities, logs, habits, goals, XP)? This can't be undone."
-      )
-    ) {
-      resetAll();
-    }
-  }
 
   return (
     <div className="min-h-screen flex flex-col sm:flex-row">
@@ -69,16 +60,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="mt-auto hidden sm:flex flex-col gap-1">
           <ThemeToggle />
-          <button
-            onClick={handleReset}
-            className="btn-ghost w-full justify-start text-xs"
-          >
-            ↺ Reset data
-          </button>
+          <ResetAccount />
         </div>
-        {/* Mobile: theme toggle stays reachable */}
-        <div className="sm:hidden">
+        {/* Mobile: theme toggle + reset stay reachable */}
+        <div className="sm:hidden flex flex-col gap-1">
           <ThemeToggle />
+          <ResetAccount />
         </div>
       </aside>
 

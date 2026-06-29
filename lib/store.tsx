@@ -12,6 +12,8 @@ import type {
   Activity,
   ActivityType,
   AppState,
+  CalendarEvent,
+  EventType,
   Goal,
   Habit,
 } from "./types";
@@ -31,6 +33,7 @@ const EMPTY_STATE: AppState = {
   habits: [],
   completions: [],
   goals: [],
+  events: [],
   achievements: [],
 };
 
@@ -67,6 +70,16 @@ interface StoreApi {
   ) => void;
   addGoalProgress: (goalId: string, delta: number) => void;
   deleteGoal: (id: string) => void;
+  addEvent: (input: {
+    title: string;
+    type: EventType;
+    date: string;
+    startTime: string | null;
+    endTime: string | null;
+    notes?: string;
+  }) => void;
+  deleteEvent: (id: string) => void;
+  toggleEventDone: (id: string) => void;
   resetAll: () => void;
 }
 
@@ -193,6 +206,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [pushToast]
   );
 
+  // Apply a pure change and run achievement/rank evaluation (no XP toast).
+  const mutate = useCallback(
+    (producer: (prev: AppState) => AppState) => {
+      const prev = stateRef.current;
+      commit(prev, producer(prev));
+    },
+    [commit]
+  );
+
   // --- simple (non-XP) actions ----------------------------------------
 
   const setDisplayName = useCallback((name: string) => {
@@ -201,10 +223,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addActivity = useCallback<StoreApi["addActivity"]>(
     (type, title, unit, xpPerLog) => {
-      setState((s) => ({
-        ...s,
+      mutate((prev) => ({
+        ...prev,
         activities: [
-          ...s.activities,
+          ...prev.activities,
           {
             id: genId(),
             type,
@@ -216,7 +238,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ],
       }));
     },
-    []
+    [mutate]
   );
 
   const deleteActivity = useCallback((id: string) => {
@@ -227,22 +249,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const addHabit = useCallback((title: string) => {
-    setState((s) => ({
-      ...s,
-      habits: [
-        ...s.habits,
-        {
-          id: genId(),
-          title,
-          currentStreak: 0,
-          longestStreak: 0,
-          lastCompletedDate: null,
-          createdAt: new Date().toISOString(),
-        } satisfies Habit,
-      ],
-    }));
-  }, []);
+  const addHabit = useCallback(
+    (title: string) => {
+      mutate((prev) => ({
+        ...prev,
+        habits: [
+          ...prev.habits,
+          {
+            id: genId(),
+            title,
+            currentStreak: 0,
+            longestStreak: 0,
+            lastCompletedDate: null,
+            createdAt: new Date().toISOString(),
+          } satisfies Habit,
+        ],
+      }));
+    },
+    [mutate]
+  );
 
   const deleteHabit = useCallback((id: string) => {
     setState((s) => ({
@@ -254,10 +279,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addGoal = useCallback<StoreApi["addGoal"]>(
     (title, targetValue, unit, deadline) => {
-      setState((s) => ({
-        ...s,
+      mutate((prev) => ({
+        ...prev,
         goals: [
-          ...s.goals,
+          ...prev.goals,
           {
             id: genId(),
             title,
@@ -271,21 +296,72 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ],
       }));
     },
-    []
+    [mutate]
   );
 
   const deleteGoal = useCallback((id: string) => {
     setState((s) => ({ ...s, goals: s.goals.filter((g) => g.id !== id) }));
   }, []);
 
+  const addEvent = useCallback<StoreApi["addEvent"]>(
+    (input) => {
+      mutate((prev) => ({
+        ...prev,
+        events: [
+          ...prev.events,
+          {
+            id: genId(),
+            title: input.title,
+            type: input.type,
+            date: input.date,
+            startTime: input.startTime,
+            endTime: input.endTime,
+            notes: input.notes,
+            done: false,
+            createdAt: new Date().toISOString(),
+          } satisfies CalendarEvent,
+        ],
+      }));
+    },
+    [mutate]
+  );
+
+  const deleteEvent = useCallback((id: string) => {
+    setState((s) => ({ ...s, events: s.events.filter((e) => e.id !== id) }));
+  }, []);
+
+  const toggleEventDone = useCallback<StoreApi["toggleEventDone"]>(
+    (id) => {
+      const prev = stateRef.current;
+      const ev = prev.events.find((e) => e.id === id);
+      if (!ev) return;
+      const nowDone = !ev.done;
+      // Only tasks award XP on completion (and refund when un-done).
+      const xpDelta =
+        ev.type === "task"
+          ? nowDone
+            ? XP_REWARDS.taskCompletion
+            : -XP_REWARDS.taskCompletion
+          : 0;
+      const next: AppState = {
+        ...prev,
+        events: prev.events.map((e) =>
+          e.id === id ? { ...e, done: nowDone } : e
+        ),
+        profile: {
+          ...prev.profile,
+          totalXp: Math.max(0, prev.profile.totalXp + xpDelta),
+        },
+      };
+      commit(prev, next, xpDelta > 0 ? xpDelta : undefined);
+    },
+    [commit]
+  );
+
+  // Full account reset — clears every stat back to a fresh account.
   const resetAll = useCallback(() => {
-    const name = stateRef.current.profile.displayName;
-    const next = {
-      ...EMPTY_STATE,
-      profile: { ...EMPTY_STATE.profile, displayName: name },
-    };
-    stateRef.current = next;
-    setState(next);
+    stateRef.current = EMPTY_STATE;
+    setState(EMPTY_STATE);
   }, []);
 
   // --- XP-bearing actions (read snapshot, commit once) ----------------
@@ -435,6 +511,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addGoal,
     addGoalProgress,
     deleteGoal,
+    addEvent,
+    deleteEvent,
+    toggleEventDone,
     resetAll,
   };
 

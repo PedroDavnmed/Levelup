@@ -7,9 +7,11 @@ import { rankForCount } from "@/lib/ranks";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { todayStr } from "@/lib/date";
 import { xpByDay, lastNDates } from "@/lib/aggregate";
+import { EVENT_STYLE, formatTime, shortDate } from "@/lib/calendar";
 import StatCard from "@/components/StatCard";
 import TrendChart from "@/components/TrendChart";
 import EmptyState from "@/components/EmptyState";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { state, hydrated, setDisplayName, toggleHabitToday } = useStore();
@@ -30,6 +32,19 @@ export default function DashboardPage() {
 
   const unlockedCount = state.achievements.length;
   const rankInfo = rankForCount(unlockedCount);
+
+  const upcoming = useMemo(
+    () =>
+      state.events
+        .filter((e) => e.date >= today && !e.done)
+        .sort(
+          (a, b) =>
+            a.date.localeCompare(b.date) ||
+            (a.startTime ?? "").localeCompare(b.startTime ?? "")
+        )
+        .slice(0, 5),
+    [state.events, today]
+  );
 
   function editName() {
     const name = prompt("Your display name:", displayName);
@@ -146,6 +161,35 @@ export default function DashboardPage() {
         <h2 className="font-semibold text-ink mb-3">XP earned · last 14 days</h2>
         <TrendChart data={xpData} type="area" color="#5b7cfa" />
       </section>
+
+      {/* Upcoming calendar entries */}
+      {upcoming.length > 0 && (
+        <section className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-ink">Upcoming</h2>
+            <Link href="/calendar" className="text-xs font-medium text-brand-600">
+              Open calendar →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {upcoming.map((e) => (
+              <li key={e.id} className="flex items-center gap-3">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: EVENT_STYLE[e.type].color }}
+                />
+                <span className="text-sm text-ink truncate flex-1">
+                  {EVENT_STYLE[e.type].icon} {e.title}
+                </span>
+                <span className="text-xs text-muted shrink-0">
+                  {shortDate(e.date)}
+                  {e.startTime ? ` · ${formatTime(e.startTime)}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Today's habits */}
       {state.habits.length > 0 && (

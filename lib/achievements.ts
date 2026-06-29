@@ -24,6 +24,10 @@ interface Metrics {
   xp: number;
   hasTraining: boolean;
   hasStudy: boolean;
+  tasksDone: number;
+  eventsCount: number;
+  habitsCreated: number;
+  allRounder: boolean;
 }
 
 function metricsOf(s: AppState): Metrics {
@@ -43,19 +47,33 @@ function metricsOf(s: AppState): Metrics {
       studyMinutes += l.value;
     }
   }
+  const tasksDone = s.events.filter(
+    (e) => e.type === "task" && e.done
+  ).length;
+  const completions = s.completions.length;
+  const goalsDone = s.goals.filter((g) => g.status === "done").length;
   return {
     trainingLogs,
     studyLogs,
     studyMinutes,
     totalLogs: s.logs.length,
-    completions: s.completions.length,
-    goalsDone: s.goals.filter((g) => g.status === "done").length,
+    completions,
+    goalsDone,
     goalsCount: s.goals.length,
     longestStreak: s.habits.reduce((m, h) => Math.max(m, h.longestStreak), 0),
     level: levelForXp(s.profile.totalXp),
     xp: s.profile.totalXp,
     hasTraining: trainIds.size > 0,
     hasStudy: studyIds.size > 0,
+    tasksDone,
+    eventsCount: s.events.length,
+    habitsCreated: s.habits.length,
+    allRounder:
+      trainingLogs > 0 &&
+      studyLogs > 0 &&
+      completions > 0 &&
+      goalsDone > 0 &&
+      tasksDone > 0,
   };
 }
 
@@ -90,6 +108,18 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "train_100", name: "Unstoppable", description: "Log 100 training sessions.", icon: "🥇", earned: (m) => m.trainingLogs >= 100 },
   { key: "level_20", name: "Veteran", description: "Reach level 20.", icon: "👑", earned: (m) => m.level >= 20 },
   { key: "xp_10000", name: "Legend", description: "Earn 10,000 total XP.", icon: "🚀", earned: (m) => m.xp >= 10000 },
+
+  // Calendar & cross-cutting achievements
+  { key: "first_task", name: "Checklist", description: "Complete your first calendar task.", icon: "✔️", earned: (m) => m.tasksDone >= 1 },
+  { key: "planner", name: "Planner", description: "Add 10 calendar entries.", icon: "📆", earned: (m) => m.eventsCount >= 10 },
+  { key: "task_25", name: "Taskmaster", description: "Complete 25 tasks.", icon: "🗒️", earned: (m) => m.tasksDone >= 25 },
+  { key: "organizer", name: "Organizer", description: "Add 50 calendar entries.", icon: "🗂️", earned: (m) => m.eventsCount >= 50 },
+  { key: "habit_builder", name: "Habit Builder", description: "Create 5 habits.", icon: "🧱", earned: (m) => m.habitsCreated >= 5 },
+  { key: "goals_10", name: "Visionary", description: "Complete 10 custom goals.", icon: "🌠", earned: (m) => m.goalsDone >= 10 },
+  { key: "task_100", name: "Productivity Machine", description: "Complete 100 tasks.", icon: "⚙️", earned: (m) => m.tasksDone >= 100 },
+  { key: "all_rounder", name: "All-Rounder", description: "Log training & study, and complete a habit, goal, and task.", icon: "🌈", earned: (m) => m.allRounder },
+  { key: "level_30", name: "Ascendant", description: "Reach level 30.", icon: "🔱", earned: (m) => m.level >= 30 },
+  { key: "xp_25000", name: "Mythic Grind", description: "Earn 25,000 total XP.", icon: "🌌", earned: (m) => m.xp >= 25000 },
 ];
 
 /** Returns keys newly earned that aren't already unlocked in state. */

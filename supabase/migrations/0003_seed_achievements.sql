@@ -27,7 +27,17 @@ insert into public.achievements (key, name, description, icon, sort_order) value
   ('streak_100',    'Centurion',      'Reach a 100-day streak on any habit.',              '🛡️', 230),
   ('train_100',     'Unstoppable',    'Log 100 training sessions.',                        '🥇', 240),
   ('level_20',      'Veteran',        'Reach level 20.',                                   '👑', 250),
-  ('xp_10000',      'Legend',         'Earn 10,000 total XP.',                             '🚀', 260)
+  ('xp_10000',      'Legend',         'Earn 10,000 total XP.',                             '🚀', 260),
+  ('first_task',    'Checklist',      'Complete your first calendar task.',                '✔️', 270),
+  ('planner',       'Planner',        'Add 10 calendar entries.',                          '📆', 280),
+  ('task_25',       'Taskmaster',     'Complete 25 tasks.',                                '🗒️', 290),
+  ('organizer',     'Organizer',      'Add 50 calendar entries.',                          '🗂️', 300),
+  ('habit_builder', 'Habit Builder',  'Create 5 habits.',                                  '🧱', 310),
+  ('goals_10',      'Visionary',      'Complete 10 custom goals.',                         '🌠', 320),
+  ('task_100',      'Productivity Machine', 'Complete 100 tasks.',                         '⚙️', 330),
+  ('all_rounder',   'All-Rounder',    'Log training & study, and complete a habit, goal, and task.', '🌈', 340),
+  ('level_30',      'Ascendant',      'Reach level 30.',                                   '🔱', 350),
+  ('xp_25000',      'Mythic Grind',   'Earn 25,000 total XP.',                             '🌌', 360)
 on conflict (key) do update set
   name = excluded.name,
   description = excluded.description,

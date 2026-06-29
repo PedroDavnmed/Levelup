@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: "🏠" },
+  { href: "/calendar", label: "Calendar", icon: "🗓️" },
   { href: "/training", label: "Training", icon: "💪" },
   { href: "/study", label: "Study", icon: "📚" },
   { href: "/habits", label: "Habits", icon: "🔥" },
   { href: "/goals", label: "Goals", icon: "🎯" },
+  { href: "/stats", label: "Stats", icon: "📊" },
   { href: "/achievements", label: "Achievements", icon: "🏆" },
 ];
 

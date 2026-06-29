@@ -5,10 +5,12 @@ import { useStore } from "@/lib/store";
 import { todayStr } from "@/lib/date";
 import { liveStreak } from "@/lib/streaks";
 import { completionsByDay } from "@/lib/aggregate";
+import { habitConsistency, consistencyColor } from "@/lib/consistency";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import Modal from "@/components/Modal";
 import TrendChart from "@/components/TrendChart";
+import ProgressRing from "@/components/ProgressRing";
 
 export default function HabitsPage() {
   const { state, hydrated, addHabit, deleteHabit, toggleHabitToday } =
@@ -22,6 +24,7 @@ export default function HabitsPage() {
     [state.completions, today]
   );
   const chartData = completionsByDay(state.completions, 14);
+  const consistency = habitConsistency(state.habits, state.completions, 30);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,6 +57,23 @@ export default function HabitsPage() {
         />
       ) : (
         <div className="space-y-6">
+          <section className="card p-5 flex items-center gap-4">
+            <ProgressRing
+              pct={consistency}
+              size={80}
+              color={consistencyColor(consistency)}
+            >
+              {consistency}%
+            </ProgressRing>
+            <div>
+              <p className="font-medium text-ink">Daily consistency</p>
+              <p className="text-xs text-muted">
+                share of habit-days completed over the last 30 days — skip a
+                planned day and it drops
+              </p>
+            </div>
+          </section>
+
           <section className="space-y-3">
             {state.habits.map((h) => {
               const done = state.completions.some(

@@ -12,12 +12,14 @@ export interface Rank {
 
 export const RANKS: Rank[] = [
   { name: "Bronze", icon: "🥉", color: "#cd9b6a", minAchievements: 0 },
-  { name: "Silver", icon: "🥈", color: "#9aa3b2", minAchievements: 3 },
-  { name: "Gold", icon: "🥇", color: "#f6c66b", minAchievements: 6 },
-  { name: "Platinum", icon: "💎", color: "#7fd1ae", minAchievements: 10 },
-  { name: "Diamond", icon: "🔷", color: "#5b7cfa", minAchievements: 15 },
-  { name: "Master", icon: "👑", color: "#c3b4f5", minAchievements: 20 },
-  { name: "Grandmaster", icon: "🏆", color: "#ffb59e", minAchievements: 26 },
+  { name: "Silver", icon: "🥈", color: "#9aa3b2", minAchievements: 4 },
+  { name: "Gold", icon: "🥇", color: "#f6c66b", minAchievements: 8 },
+  { name: "Platinum", icon: "💠", color: "#7fd1ae", minAchievements: 13 },
+  { name: "Diamond", icon: "🔷", color: "#5b7cfa", minAchievements: 18 },
+  { name: "Master", icon: "👑", color: "#c3b4f5", minAchievements: 23 },
+  { name: "Grandmaster", icon: "🏆", color: "#ffb59e", minAchievements: 28 },
+  { name: "Champion", icon: "🎖️", color: "#f6c66b", minAchievements: 32 },
+  { name: "Immortal", icon: "🌟", color: "#5b7cfa", minAchievements: 36 },
 ];
 
 export interface RankProgress {

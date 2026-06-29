@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import type { ActivityType } from "@/lib/types";
 import { sumByDay } from "@/lib/aggregate";
+import { activeDaysConsistency, consistencyColor } from "@/lib/consistency";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import Modal from "@/components/Modal";
 import TrendChart from "@/components/TrendChart";
+import ProgressRing from "@/components/ProgressRing";
 
 export default function ActivityTracker({
   type,
@@ -55,6 +57,10 @@ export default function ActivityTracker({
 
   const totalValue = logs.reduce((s, l) => s + l.value, 0);
   const chartData = sumByDay(logs, 14);
+  const consistency = activeDaysConsistency(
+    logs.map((l) => l.loggedAt.slice(0, 10)),
+    30
+  );
 
   const recent = useMemo(
     () =>
@@ -110,16 +116,27 @@ export default function ActivityTracker({
       ) : (
         <div className="space-y-6">
           <section className="grid gap-4 sm:grid-cols-3">
+            <div className="card p-5 flex items-center gap-4">
+              <ProgressRing
+                pct={consistency}
+                size={72}
+                color={consistencyColor(consistency)}
+              >
+                {consistency}%
+              </ProgressRing>
+              <div>
+                <p className="text-sm font-medium text-ink">Consistency</p>
+                <p className="text-xs text-muted">
+                  days active over the last 30
+                </p>
+              </div>
+            </div>
             <StatCard label="Total sessions" value={logs.length} />
             <StatCard
               label="Total logged"
               value={totalValue}
               sub={activities[0]?.unit}
               accent="text-brand-600"
-            />
-            <StatCard
-              label="Activities"
-              value={activities.length}
             />
           </section>
 

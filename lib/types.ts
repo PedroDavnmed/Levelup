@@ -44,6 +44,20 @@ export interface Goal {
   createdAt: string;
 }
 
+export type EventType = "task" | "meeting" | "event";
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  type: EventType;
+  date: string; // YYYY-MM-DD
+  startTime: string | null; // HH:MM (24h) or null for all-day
+  endTime: string | null; // HH:MM (24h) or null
+  notes?: string;
+  done: boolean; // mainly meaningful for tasks
+  createdAt: string;
+}
+
 export interface UnlockedAchievement {
   key: string;
   unlockedAt: string;
@@ -61,10 +75,12 @@ export interface AppState {
   habits: Habit[];
   completions: HabitCompletion[];
   goals: Goal[];
+  events: CalendarEvent[];
   achievements: UnlockedAchievement[];
 }
 
 export const XP_REWARDS = {
   habitCompletion: 5,
   goalCompletion: 50,
+  taskCompletion: 10,
 } as const;

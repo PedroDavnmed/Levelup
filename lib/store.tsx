@@ -45,6 +45,14 @@ export interface Toast {
   icon: string;
 }
 
+/** A "big moment" signal the <Celebration> component reacts to (confetti/sound).
+ *  `nonce` changes every time so repeats of the same kind still fire. */
+export interface Celebration {
+  nonce: number;
+  kind: "level" | "badge" | "rank";
+  label?: string;
+}
+
 interface StoreApi {
   state: AppState;
   hydrated: boolean;
@@ -107,6 +115,7 @@ interface StoreApi {
   toggleEventDone: (id: string) => void;
   resetAll: () => void;
   importData: (next: AppState) => void;
+  celebration: Celebration | null;
 }
 
 const StoreContext = createContext<StoreApi | null>(null);
@@ -123,6 +132,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
+  const [celebration, setCelebration] = useState<Celebration | null>(null);
+  const celebrationSeq = useRef(0);
 
   // stateRef always mirrors the latest state so action creators can read a
   // synchronous snapshot, compute the full next state, and commit once.
@@ -228,6 +239,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           detail: "Keep unlocking achievements",
         });
       }
+
+      // Fire one celebration for the biggest moment this commit (confetti +
+      // optional sound; a level-up also gets the centered banner).
+      const bump = (kind: Celebration["kind"], label?: string) =>
+        setCelebration({ nonce: ++celebrationSeq.current, kind, label });
+      if (after > before) bump("level", `Level ${after}`);
+      else if (rankAfter.name !== rankBefore.name) bump("rank", rankAfter.name);
+      else if (newKeys.length) bump("badge");
     },
     [pushToast]
   );
@@ -589,6 +608,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     toggleEventDone,
     resetAll,
     importData,
+    celebration,
   };
 
   return <StoreContext.Provider value={api}>{children}</StoreContext.Provider>;

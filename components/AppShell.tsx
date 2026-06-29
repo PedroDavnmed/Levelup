@@ -5,7 +5,9 @@ import { levelProgress } from "@/lib/gamification";
 import { rankForCount } from "@/lib/ranks";
 import NavLinks from "@/components/NavLinks";
 import Toasts from "@/components/Toasts";
+import Celebration from "@/components/Celebration";
 import ThemeToggle from "@/components/ThemeToggle";
+import SoundToggle from "@/components/SoundToggle";
 import ResetAccount from "@/components/ResetAccount";
 import DataBackup from "@/components/DataBackup";
 
@@ -61,12 +63,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="mt-auto hidden sm:flex flex-col gap-1">
           <ThemeToggle />
+          <SoundToggle />
           <DataBackup />
           <ResetAccount />
         </div>
         {/* Mobile: theme toggle + data + reset stay reachable */}
         <div className="sm:hidden flex flex-col gap-1">
           <ThemeToggle />
+          <SoundToggle />
           <DataBackup />
           <ResetAccount />
         </div>
@@ -77,6 +81,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <Toasts />
+      <Celebration />
     </div>
   );
 }

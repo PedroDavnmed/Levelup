@@ -11,11 +11,13 @@ import EmptyState from "@/components/EmptyState";
 import Modal from "@/components/Modal";
 import TrendChart from "@/components/TrendChart";
 import ProgressRing from "@/components/ProgressRing";
+import Loading from "@/components/Loading";
 
 export default function HabitsPage() {
-  const { state, hydrated, addHabit, deleteHabit, toggleHabitToday } =
+  const { state, hydrated, addHabit, deleteHabit, updateHabit, toggleHabitToday } =
     useStore();
   const [showNew, setShowNew] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
 
   const today = todayStr();
@@ -29,12 +31,30 @@ export default function HabitsPage() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    addHabit(title.trim());
+    if (editId) updateHabit(editId, { title: title.trim() });
+    else addHabit(title.trim());
+    closeForm();
+  }
+
+  function openNew() {
+    setEditId(null);
     setTitle("");
+    setShowNew(true);
+  }
+
+  function openEdit(id: string, currentTitle: string) {
+    setEditId(id);
+    setTitle(currentTitle);
     setShowNew(false);
   }
 
-  if (!hydrated) return null;
+  function closeForm() {
+    setShowNew(false);
+    setEditId(null);
+    setTitle("");
+  }
+
+  if (!hydrated) return <Loading />;
 
   return (
     <div>
@@ -43,7 +63,7 @@ export default function HabitsPage() {
         icon="🔥"
         subtitle={`${doneTodayCount}/${state.habits.length} done today`}
         action={
-          <button onClick={() => setShowNew(true)} className="btn-primary">
+          <button onClick={openNew} className="btn-primary">
             + New
           </button>
         }
@@ -104,6 +124,13 @@ export default function HabitsPage() {
                     </p>
                   </div>
                   <button
+                    onClick={() => openEdit(h.id, h.title)}
+                    className="text-muted hover:text-ink text-sm px-1 shrink-0"
+                    aria-label="Edit habit"
+                  >
+                    ✏️
+                  </button>
+                  <button
                     onClick={() => {
                       if (confirm(`Delete habit "${h.title}"?`))
                         deleteHabit(h.id);
@@ -127,7 +154,11 @@ export default function HabitsPage() {
         </div>
       )}
 
-      <Modal open={showNew} onClose={() => setShowNew(false)} title="New habit">
+      <Modal
+        open={showNew || editId != null}
+        onClose={closeForm}
+        title={editId ? "Edit habit" : "New habit"}
+      >
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="label" htmlFor="habit-title">
@@ -142,11 +173,13 @@ export default function HabitsPage() {
               autoFocus
             />
           </div>
-          <p className="text-xs text-muted">
-            Each completion earns +5 XP and grows your streak.
-          </p>
+          {!editId && (
+            <p className="text-xs text-muted">
+              Each completion earns +5 XP and grows your streak.
+            </p>
+          )}
           <button type="submit" className="btn-primary w-full">
-            Add habit
+            {editId ? "Save changes" : "Add habit"}
           </button>
         </form>
       </Modal>

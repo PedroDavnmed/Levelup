@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { levelProgress } from "@/lib/gamification";
 import { rankForCount } from "@/lib/ranks";
@@ -11,6 +11,7 @@ import { EVENT_STYLE, formatTime, shortDate } from "@/lib/calendar";
 import StatCard from "@/components/StatCard";
 import TrendChart from "@/components/TrendChart";
 import EmptyState from "@/components/EmptyState";
+import Modal from "@/components/Modal";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -46,9 +47,18 @@ export default function DashboardPage() {
     [state.events, today]
   );
 
-  function editName() {
-    const name = prompt("Your display name:", displayName);
-    if (name && name.trim()) setDisplayName(name.trim());
+  const [showName, setShowName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+
+  function openNameEdit() {
+    setNameDraft(displayName);
+    setShowName(true);
+  }
+
+  function submitName(e: React.FormEvent) {
+    e.preventDefault();
+    if (nameDraft.trim()) setDisplayName(nameDraft.trim());
+    setShowName(false);
   }
 
   if (!hydrated) {
@@ -68,7 +78,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold text-ink">
             {displayName} 👋{" "}
             <button
-              onClick={editName}
+              onClick={openNameEdit}
               className="text-xs font-normal text-brand-600 align-middle"
             >
               edit
@@ -224,6 +234,32 @@ export default function DashboardPage() {
           </ul>
         </section>
       )}
+
+      {/* Edit display name */}
+      <Modal
+        open={showName}
+        onClose={() => setShowName(false)}
+        title="Your display name"
+      >
+        <form onSubmit={submitName} className="space-y-4">
+          <div>
+            <label className="label" htmlFor="display-name">
+              Name
+            </label>
+            <input
+              id="display-name"
+              className="input"
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              placeholder="Player"
+              autoFocus
+            />
+          </div>
+          <button type="submit" className="btn-primary w-full">
+            Save
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 }

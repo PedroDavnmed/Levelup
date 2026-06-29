@@ -14,6 +14,7 @@ import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import ProgressRing from "@/components/ProgressRing";
 import { localDateOf } from "@/lib/date";
+import Loading from "@/components/Loading";
 
 function ConsistencyCard({
   label,
@@ -82,7 +83,7 @@ export default function StatsPage() {
     };
   }, [state]);
 
-  if (!hydrated) return null;
+  if (!hydrated) return <Loading />;
 
   const prog = levelProgress(state.profile.totalXp);
   const rank = rankForCount(state.achievements.length);

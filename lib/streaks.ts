@@ -1,4 +1,4 @@
-import { dayDiff } from "./date";
+import { dayDiff, addDays, isScheduled } from "./date";
 
 /**
  * Given a habit's last completion date and current streak, return the streak
@@ -63,4 +63,62 @@ export function liveStreak(
   if (diff <= 0) return current; // completed today
   if (diff === 1) return current; // completed yesterday, still alive today
   return 0;
+}
+
+// --- Weekday-aware variants -------------------------------------------------
+// These reduce exactly to the daily versions above when every day is scheduled.
+
+/** The most recent scheduled day strictly before `date`. */
+function prevScheduledDay(date: string, days?: number[]): string {
+  let d = addDays(date, -1);
+  for (let i = 0; i < 7 && !isScheduled(d, days); i++) d = addDays(d, -1);
+  return d;
+}
+
+/** The next scheduled day strictly after `date`. */
+function nextScheduledDay(date: string, days?: number[]): string {
+  let d = addDays(date, 1);
+  for (let i = 0; i < 7 && !isScheduled(d, days); i++) d = addDays(d, 1);
+  return d;
+}
+
+/**
+ * Like `streakStats`, but only scheduled days count toward the streak: two
+ * scheduled completions are consecutive when no scheduled day was skipped
+ * between them. Off-schedule completions don't extend or break the streak.
+ */
+export function scheduledStreakStats(
+  completionDates: string[],
+  days?: number[]
+): StreakStats {
+  if (completionDates.length === 0) {
+    return { current: 0, longest: 0, last: null };
+  }
+  const all = Array.from(new Set(completionDates)).sort();
+  const last = all[all.length - 1];
+  const sched = all.filter((d) => isScheduled(d, days));
+  if (sched.length === 0) return { current: 0, longest: 0, last };
+
+  let longest = 1;
+  let run = 1;
+  for (let i = 1; i < sched.length; i++) {
+    run = prevScheduledDay(sched[i], days) === sched[i - 1] ? run + 1 : 1;
+    longest = Math.max(longest, run);
+  }
+  return { current: run, longest, last };
+}
+
+/**
+ * Schedule-aware `liveStreak`: the streak is still alive unless a scheduled day
+ * has passed (strictly before today) without a completion since `lastDate`.
+ */
+export function liveScheduledStreak(
+  lastDate: string | null,
+  current: number,
+  days: number[] | undefined,
+  today: string
+): number {
+  if (!lastDate) return 0;
+  if (lastDate >= today) return current; // completed today (or later)
+  return nextScheduledDay(lastDate, days) >= today ? current : 0;
 }

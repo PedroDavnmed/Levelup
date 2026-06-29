@@ -21,7 +21,7 @@ import { XP_REWARDS } from "./types";
 import { levelForXp } from "./gamification";
 import { evaluateNewAchievements, ACHIEVEMENTS } from "./achievements";
 import { rankForCount } from "./ranks";
-import { streakStats } from "./streaks";
+import { scheduledStreakStats } from "./streaks";
 import { todayStr } from "./date";
 
 const STORAGE_KEY = "levelup:v1";
@@ -71,9 +71,12 @@ interface StoreApi {
     patch: { title: string; unit: string; xpPerLog: number }
   ) => void;
   logActivity: (activityId: string, value: number, note?: string) => void;
-  addHabit: (title: string) => void;
+  addHabit: (title: string, days?: number[]) => void;
   deleteHabit: (id: string) => void;
-  updateHabit: (id: string, patch: { title: string }) => void;
+  updateHabit: (
+    id: string,
+    patch: { title: string; days?: number[] }
+  ) => void;
   toggleHabitToday: (habitId: string) => void;
   addGoal: (
     title: string,
@@ -308,8 +311,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [mutate]
   );
 
-  const addHabit = useCallback(
-    (title: string) => {
+  const addHabit = useCallback<StoreApi["addHabit"]>(
+    (title, days) => {
       mutate((prev) => ({
         ...prev,
         habits: [
@@ -321,6 +324,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             longestStreak: 0,
             lastCompletedDate: null,
             createdAt: new Date().toISOString(),
+            days,
           } satisfies Habit,
         ],
       }));
@@ -340,9 +344,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (id, patch) => {
       mutate((prev) => ({
         ...prev,
-        habits: prev.habits.map((h) =>
-          h.id === id ? { ...h, ...patch } : h
-        ),
+        habits: prev.habits.map((h) => {
+          if (h.id !== id) return h;
+          // Re-derive the streak under the (possibly new) schedule so it stays
+          // consistent with the completion history.
+          const merged = { ...h, ...patch };
+          const stats = scheduledStreakStats(
+            prev.completions
+              .filter((c) => c.habitId === id)
+              .map((c) => c.completedOn),
+            merged.days
+          );
+          return {
+            ...merged,
+            currentStreak: stats.current,
+            longestStreak: stats.longest,
+            lastCompletedDate: stats.last,
+          };
+        }),
       }));
     },
     [mutate]
@@ -516,10 +535,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           )
         : [...prev.completions, { id: genId(), habitId, completedOn: today }];
 
-      const stats = streakStats(
+      const stats = scheduledStreakStats(
         completions
           .filter((c) => c.habitId === habitId)
-          .map((c) => c.completedOn)
+          .map((c) => c.completedOn),
+        habit.days
       );
 
       // Award on check, refund on un-check (floored at 0).

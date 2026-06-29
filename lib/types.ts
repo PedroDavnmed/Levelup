@@ -25,6 +25,9 @@ export interface Habit {
   longestStreak: number;
   lastCompletedDate: string | null; // YYYY-MM-DD
   createdAt: string;
+  /** Weekday numbers (0=Sun … 6=Sat) the habit is scheduled on. Absent / empty
+   *  / all-seven means every day (backward compatible with older habits). */
+  days?: number[];
 }
 
 export interface HabitCompletion {

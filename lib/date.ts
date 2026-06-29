@@ -26,6 +26,18 @@ export function addDays(date: string, n: number): string {
   return todayStr(d);
 }
 
+/** Weekday index (0=Sun … 6=Sat) for a YYYY-MM-DD string, in local time. */
+export function dayOfWeek(date: string): number {
+  return new Date(date + "T00:00:00").getDay();
+}
+
+/** Whether a habit with the given weekday schedule applies on `date`.
+ *  Absent / empty / all-seven schedules mean "every day". */
+export function isScheduled(date: string, days?: number[]): boolean {
+  if (!days || days.length === 0 || days.length >= 7) return true;
+  return days.includes(dayOfWeek(date));
+}
+
 /** Short label like "Mon 12" for charts/axes. */
 export function shortLabel(date: string): string {
   const d = new Date(date + "T00:00:00");

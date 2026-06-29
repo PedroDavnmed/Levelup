@@ -1,0 +1,206 @@
+"use client";
+
+import { useState } from "react";
+import { useStore } from "@/lib/store";
+import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
+import Modal from "@/components/Modal";
+import ProgressRing from "@/components/ProgressRing";
+
+export default function GoalsPage() {
+  const { state, hydrated, addGoal, addGoalProgress, deleteGoal } = useStore();
+
+  const [showNew, setShowNew] = useState(false);
+  const [title, setTitle] = useState("");
+  const [target, setTarget] = useState("");
+  const [unit, setUnit] = useState("");
+  const [deadline, setDeadline] = useState("");
+
+  const [progressFor, setProgressFor] = useState<string | null>(null);
+  const [amount, setAmount] = useState("");
+
+  function submitNew(e: React.FormEvent) {
+    e.preventDefault();
+    const t = parseFloat(target);
+    if (!title.trim() || isNaN(t) || t <= 0) return;
+    addGoal(title.trim(), t, unit.trim(), deadline || null);
+    setTitle("");
+    setTarget("");
+    setUnit("");
+    setDeadline("");
+    setShowNew(false);
+  }
+
+  function submitProgress(e: React.FormEvent) {
+    e.preventDefault();
+    if (progressFor == null) return;
+    const a = parseFloat(amount);
+    if (!isNaN(a) && a !== 0) addGoalProgress(progressFor, a);
+    setAmount("");
+    setProgressFor(null);
+  }
+
+  const active = state.goals.filter((g) => g.status === "active");
+  const done = state.goals.filter((g) => g.status === "done");
+
+  if (!hydrated) return null;
+
+  return (
+    <div>
+      <PageHeader
+        title="Goals"
+        icon="🎯"
+        subtitle={`${active.length} active · ${done.length} completed`}
+        action={
+          <button onClick={() => setShowNew(true)} className="btn-primary">
+            + New
+          </button>
+        }
+      />
+
+      {state.goals.length === 0 ? (
+        <EmptyState
+          icon="🎯"
+          title="No goals yet"
+          hint='Set a target like "Run 50 km this month" and watch the ring fill as you log progress.'
+        />
+      ) : (
+        <div className="space-y-3">
+          {[...active, ...done].map((g) => {
+            const pct = Math.min(
+              100,
+              Math.round((g.currentValue / g.targetValue) * 100)
+            );
+            return (
+              <div key={g.id} className="card p-4 flex items-center gap-4">
+                <ProgressRing
+                  pct={pct}
+                  color={g.status === "done" ? "#7fd1ae" : "#5b7cfa"}
+                >
+                  {pct}%
+                </ProgressRing>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-ink truncate">
+                    {g.title}{" "}
+                    {g.status === "done" && (
+                      <span className="text-mint">✓ done</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {g.currentValue} / {g.targetValue} {g.unit}
+                    {g.deadline && ` · by ${g.deadline}`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {g.status === "active" && (
+                    <>
+                      <button
+                        onClick={() => addGoalProgress(g.id, 1)}
+                        className="btn-ghost border border-line px-3 py-1.5 text-xs"
+                      >
+                        +1
+                      </button>
+                      <button
+                        onClick={() => setProgressFor(g.id)}
+                        className="btn-primary px-3 py-1.5 text-xs"
+                      >
+                        + Add
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (confirm(`Delete goal "${g.title}"?`)) deleteGoal(g.id);
+                    }}
+                    className="text-muted hover:text-red-500 text-sm px-1"
+                    aria-label="Delete goal"
+                  >
+                    🗑
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* New goal modal */}
+      <Modal open={showNew} onClose={() => setShowNew(false)} title="New goal">
+        <form onSubmit={submitNew} className="space-y-4">
+          <div>
+            <label className="label" htmlFor="goal-title">Goal</label>
+            <input
+              id="goal-title"
+              className="input"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Run 50 km this month"
+              autoFocus
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label" htmlFor="goal-target">Target</label>
+              <input
+                id="goal-target"
+                type="number"
+                step="any"
+                min={0}
+                className="input"
+                value={target}
+                onChange={(e) => setTarget(e.target.value)}
+                placeholder="50"
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="goal-unit">Unit</label>
+              <input
+                id="goal-unit"
+                className="input"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                placeholder="km"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="label" htmlFor="goal-deadline">Deadline (optional)</label>
+            <input
+              id="goal-deadline"
+              type="date"
+              className="input"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
+          </div>
+          <p className="text-xs text-muted">Completing a goal earns +50 XP.</p>
+          <button type="submit" className="btn-primary w-full">Create goal</button>
+        </form>
+      </Modal>
+
+      {/* Add progress modal */}
+      <Modal
+        open={progressFor != null}
+        onClose={() => setProgressFor(null)}
+        title="Add progress"
+      >
+        <form onSubmit={submitProgress} className="space-y-4">
+          <div>
+            <label className="label" htmlFor="goal-amount">How much to add?</label>
+            <input
+              id="goal-amount"
+              type="number"
+              step="any"
+              className="input"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="e.g. 5"
+              autoFocus
+            />
+          </div>
+          <button type="submit" className="btn-primary w-full">Add progress</button>
+        </form>
+      </Modal>
+    </div>
+  );
+}

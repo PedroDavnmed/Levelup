@@ -7,6 +7,11 @@ export function todayStr(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Local-calendar Y-M-D for an ISO timestamp (avoids UTC-slice drift). */
+export function localDateOf(iso: string): string {
+  return todayStr(new Date(iso));
+}
+
 /** Whole-day difference (b - a) between two YYYY-MM-DD strings. */
 export function dayDiff(a: string, b: string): number {
   const da = new Date(a + "T00:00:00");

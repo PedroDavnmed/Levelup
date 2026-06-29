@@ -5,7 +5,7 @@ import { useStore } from "@/lib/store";
 import { levelProgress } from "@/lib/gamification";
 import { rankForCount } from "@/lib/ranks";
 import { ACHIEVEMENTS } from "@/lib/achievements";
-import { todayStr } from "@/lib/date";
+import { todayStr, localDateOf } from "@/lib/date";
 import { xpByDay, lastNDates } from "@/lib/aggregate";
 import { EVENT_STYLE, formatTime, shortDate } from "@/lib/calendar";
 import StatCard from "@/components/StatCard";
@@ -21,7 +21,7 @@ export default function DashboardPage() {
 
   const weekDates = useMemo(() => new Set(lastNDates(7)), []);
   const sessionsThisWeek = useMemo(
-    () => state.logs.filter((l) => weekDates.has(l.loggedAt.slice(0, 10))).length,
+    () => state.logs.filter((l) => weekDates.has(localDateOf(l.loggedAt))).length,
     [state.logs, weekDates]
   );
   const habitsDoneToday = state.completions.filter(

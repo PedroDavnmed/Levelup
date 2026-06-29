@@ -1,6 +1,6 @@
 import type { ActivityLog, HabitCompletion } from "./types";
 import { XP_REWARDS } from "./types";
-import { addDays, shortLabel, todayStr } from "./date";
+import { addDays, localDateOf, shortLabel, todayStr } from "./date";
 import type { ChartPoint } from "@/components/TrendChart";
 
 /** The last `n` calendar dates (YYYY-MM-DD), oldest first, ending today. */
@@ -9,7 +9,7 @@ export function lastNDates(n: number): string[] {
   return Array.from({ length: n }, (_, i) => addDays(today, -(n - 1 - i)));
 }
 
-const dateOf = (iso: string) => iso.slice(0, 10);
+const dateOf = localDateOf;
 
 /** Sum a numeric field of logs per day over the last `n` days. */
 export function sumByDay(

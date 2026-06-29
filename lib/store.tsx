@@ -21,7 +21,7 @@ import { XP_REWARDS } from "./types";
 import { levelForXp } from "./gamification";
 import { evaluateNewAchievements, ACHIEVEMENTS } from "./achievements";
 import { rankForCount } from "./ranks";
-import { nextStreak } from "./streaks";
+import { streakStats } from "./streaks";
 import { todayStr } from "./date";
 
 const STORAGE_KEY = "levelup:v1";
@@ -402,64 +402,45 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         (c) => c.habitId === habitId && c.completedOn === today
       );
 
-      if (doneToday) {
-        // Un-check today: remove completion, roll streak back, refund XP.
-        const newStreak = Math.max(0, habit.currentStreak - 1);
-        const next: AppState = {
-          ...prev,
-          completions: prev.completions.filter(
+      // Toggle today's completion, then recompute the streak straight from the
+      // resulting completion history so the stored streak can never drift from
+      // what actually happened (un-check + re-check restores the same value).
+      const completions = doneToday
+        ? prev.completions.filter(
             (c) => !(c.habitId === habitId && c.completedOn === today)
-          ),
-          habits: prev.habits.map((h) =>
-            h.id === habitId
-              ? {
-                  ...h,
-                  currentStreak: newStreak,
-                  lastCompletedDate:
-                    newStreak === 0 ? null : h.lastCompletedDate,
-                }
-              : h
-          ),
-          profile: {
-            ...prev.profile,
-            totalXp: Math.max(
-              0,
-              prev.profile.totalXp - XP_REWARDS.habitCompletion
-            ),
-          },
-        };
-        commit(prev, next);
-        return;
-      }
+          )
+        : [...prev.completions, { id: genId(), habitId, completedOn: today }];
 
-      // Check today: advance streak and award XP.
-      const streak = nextStreak(
-        habit.lastCompletedDate,
-        habit.currentStreak,
-        today
+      const stats = streakStats(
+        completions
+          .filter((c) => c.habitId === habitId)
+          .map((c) => c.completedOn)
       );
+
+      // Award on check, refund on un-check (floored at 0).
+      const xpDelta = doneToday
+        ? -XP_REWARDS.habitCompletion
+        : XP_REWARDS.habitCompletion;
+
       const next: AppState = {
         ...prev,
-        completions: [
-          ...prev.completions,
-          { id: genId(), habitId, completedOn: today },
-        ],
+        completions,
         habits: prev.habits.map((h) =>
           h.id === habitId
             ? {
                 ...h,
-                currentStreak: streak,
-                longestStreak: Math.max(h.longestStreak, streak),
-                lastCompletedDate: today,
+                currentStreak: stats.current,
+                longestStreak: stats.longest,
+                lastCompletedDate: stats.last,
               }
             : h
         ),
         profile: {
           ...prev.profile,
-          totalXp: prev.profile.totalXp + XP_REWARDS.habitCompletion,
+          totalXp: Math.max(0, prev.profile.totalXp + xpDelta),
         },
       };
-      commit(prev, next, XP_REWARDS.habitCompletion);
+      commit(prev, next, xpDelta > 0 ? xpDelta : undefined);
     },
     [commit]
   );
@@ -470,7 +451,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const goal = prev.goals.find((g) => g.id === goalId);
       if (!goal || goal.status === "done") return;
       const newValue = Math.max(0, goal.currentValue + delta);
-      const justDone = newValue >= goal.targetValue;
+      // Guard targetValue > 0 so a zero/negative target can't auto-complete and
+      // hand out the 50 XP reward on the very first progress tick.
+      const justDone = goal.targetValue > 0 && newValue >= goal.targetValue;
       let next: AppState = {
         ...prev,
         goals: prev.goals.map((g) =>

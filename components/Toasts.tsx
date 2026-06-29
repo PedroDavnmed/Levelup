@@ -18,7 +18,7 @@ export default function Toasts() {
         <button
           key={t.id}
           onClick={() => dismissToast(t.id)}
-          className={`card flex items-center gap-3 border px-4 py-3 text-left animate-[fadeIn_0.2s_ease-out] ${
+          className={`card flex items-center gap-3 border px-4 py-3 text-left animate-fadeIn ${
             STYLES[t.kind] ?? ""
           }`}
         >

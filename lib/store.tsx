@@ -601,11 +601,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [commit]
   );
 
+  // Record a completed focus session. Grants no XP (the task's own completion is
+  // the reward) and never touches the task's done-state — it's tracked purely
+  // for focus-time stats. Still routed through commit so the XP-free focus
+  // achievements evaluate and their badge celebration fires.
   const logFocusSession = useCallback<StoreApi["logFocusSession"]>(
     (minutes, taskId = null) => {
       if (minutes <= 0) return;
       const prev = stateRef.current;
-      const xp = Math.round(minutes * XP_REWARDS.focusPerMinute);
       const now = new Date();
       const next: AppState = {
         ...prev,
@@ -615,15 +618,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             id: genId(),
             taskId: taskId ?? null,
             minutes,
-            // Best-effort start time (we only credit completed sessions).
             startedAt: new Date(now.getTime() - minutes * 60_000).toISOString(),
             completedAt: now.toISOString(),
-            xpAwarded: xp,
           },
         ],
-        profile: { ...prev.profile, totalXp: prev.profile.totalXp + xp },
       };
-      commit(prev, next, xp);
+      commit(prev, next);
     },
     [commit]
   );

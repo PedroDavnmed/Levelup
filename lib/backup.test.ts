@@ -24,7 +24,7 @@ function sampleState(): AppState {
       { id: "t2", title: "Practice", done: false, createdAt: "2026-06-03T00:00:00Z", completedAt: null },
     ],
     focusSessions: [
-      { id: "f1", taskId: "t1", minutes: 25, startedAt: "2026-06-02T08:35:00Z", completedAt: "2026-06-02T09:00:00Z", xpAwarded: 25 },
+      { id: "f1", taskId: "t1", minutes: 25, startedAt: "2026-06-02T08:35:00Z", completedAt: "2026-06-02T09:00:00Z" },
     ],
     achievements: [{ key: "first_workout", unlockedAt: "2026-06-01T10:00:00Z" }],
   };

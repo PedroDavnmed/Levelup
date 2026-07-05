@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
-import { XP_REWARDS } from "@/lib/types";
 import { isSoundEnabled, playChime } from "@/lib/sound";
 
-const PRESETS = [25, 50] as const;
+const MAX_MINUTES = 180;
 
 /** mm:ss for a millisecond remaining value. */
 function fmt(ms: number): string {
@@ -15,9 +14,10 @@ function fmt(ms: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-/** A Pomodoro-style focus timer. Finishing a session logs the focused minutes
- *  through the store (awarding XP via the normal commit pipeline, which fires
- *  the XP toast + celebration). Optionally tied to a pending study task. */
+/** A Pomodoro-style focus timer with a custom duration. Finishing a session
+ *  records the focused minutes for stats (no XP; the task's own completion is
+ *  the reward) and never closes the linked task. Optionally tied to a pending
+ *  study task. */
 export default function FocusTimer() {
   const { state, logFocusSession } = useStore();
   const [minutes, setMinutes] = useState<number>(25);
@@ -60,10 +60,10 @@ export default function FocusTimer() {
 
   const totalMs = minutes * 60_000;
   const pct = totalMs > 0 ? (1 - remainingMs / totalMs) * 100 : 0;
-  const xpFor = Math.round(minutes * XP_REWARDS.focusPerMinute);
   const linkedTitle = pending.find((t) => t.id === taskId)?.title;
 
   function start() {
+    if (minutes < 1) return;
     endAtRef.current = Date.now() + remainingMs;
     setRunning(true);
   }
@@ -78,32 +78,29 @@ export default function FocusTimer() {
     setRunning(false);
     setRemainingMs(minutes * 60_000);
   }
-  function choosePreset(p: number) {
-    setMinutes(p);
-    setRemainingMs(p * 60_000);
+  function changeMinutes(v: string) {
+    const n = parseInt(v, 10);
+    const m = Number.isNaN(n) ? 0 : Math.min(MAX_MINUTES, Math.max(0, n));
+    setMinutes(m);
+    setRemainingMs(m * 60_000);
   }
 
   return (
     <section className="card p-5">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-ink">Focus timer</h2>
-        <div className="flex gap-1.5">
-          {PRESETS.map((p) => (
-            <button
-              key={p}
-              onClick={() => choosePreset(p)}
-              disabled={running}
-              className={`rounded-lg border px-2.5 py-1 text-sm transition disabled:opacity-40 ${
-                minutes === p
-                  ? "border-brand-500 font-semibold text-brand-600"
-                  : "border-line text-muted hover:border-brand-500"
-              }`}
-              aria-label={`${p} minute session`}
-              aria-pressed={minutes === p}
-            >
-              {p}m
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={1}
+            max={MAX_MINUTES}
+            value={minutes || ""}
+            onChange={(e) => changeMinutes(e.target.value)}
+            disabled={running}
+            className="input w-20 text-center disabled:opacity-40"
+            aria-label="Session length in minutes"
+          />
+          <span className="text-sm text-muted">min</span>
         </div>
       </div>
 
@@ -142,7 +139,8 @@ export default function FocusTimer() {
         {!running ? (
           <button
             onClick={start}
-            className="btn-primary flex-1"
+            disabled={minutes < 1}
+            className="btn-primary flex-1 disabled:opacity-40"
             aria-label="Start focus session"
           >
             {remainingMs < totalMs ? "Resume" : "▶ Start"}
@@ -167,8 +165,9 @@ export default function FocusTimer() {
       </div>
 
       <p className="mt-3 text-center text-xs text-muted">
-        Finish this {minutes}-min session to earn +{xpFor} XP
-        {linkedTitle ? ` · ${linkedTitle}` : ""}.
+        {linkedTitle
+          ? `Focusing on “${linkedTitle}” — it stays in your to-do list until you check it off.`
+          : "Tracked toward your focus time. No XP — checking off tasks is the reward."}
       </p>
     </section>
   );

@@ -117,12 +117,11 @@ export function totalFocusMinutes(
 }
 
 /** Combined XP earned per day (activity logs + habit completions + completed
- *  study tasks + focus sessions). */
+ *  study tasks). Focus sessions grant no XP, so they don't appear here. */
 export function xpByDay(
   logs: ActivityLog[],
   completions: HabitCompletion[],
   studyTasks: StudyTask[],
-  focusSessions: FocusSession[],
   n: number
 ): ChartPoint[] {
   const dates = lastNDates(n);
@@ -141,10 +140,6 @@ export function xpByDay(
   for (const d of studyTaskDates(studyTasks)) {
     if (totals.has(d))
       totals.set(d, totals.get(d)! + XP_REWARDS.taskCompletion);
-  }
-  for (const s of focusSessions) {
-    const d = dateOf(s.completedAt);
-    if (totals.has(d)) totals.set(d, totals.get(d)! + s.xpAwarded);
   }
   return dates.map((d) => ({ label: shortLabel(d), value: totals.get(d)! }));
 }

@@ -61,7 +61,6 @@ describe("evaluateNewAchievements", () => {
       minutes: 25,
       startedAt: "2026-06-01T08:35:00Z",
       completedAt: "2026-06-01T09:00:00Z",
-      xpAwarded: 25,
     });
     expect(evaluateNewAchievements(s)).toContain("first_focus");
   });

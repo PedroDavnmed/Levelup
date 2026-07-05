@@ -42,19 +42,13 @@ function log(
   };
 }
 
-function focus(
-  daysAgo: number,
-  hour: number,
-  minutes: number,
-  xp = minutes
-): FocusSession {
+function focus(daysAgo: number, hour: number, minutes: number): FocusSession {
   return {
     id: `f${daysAgo}-${hour}`,
     taskId: null,
     minutes,
     startedAt: isoAtLocal(daysAgo, hour),
     completedAt: isoAtLocal(daysAgo, hour),
-    xpAwarded: xp,
   };
 }
 
@@ -79,7 +73,7 @@ describe("aggregate bucketing", () => {
     expect(points[points.length - 2].value).toBe(1); // one yesterday
   });
 
-  it("xpByDay combines activity, habit, study-task, and focus XP on the same LOCAL day", () => {
+  it("xpByDay combines activity, habit, and study-task XP on the same LOCAL day", () => {
     const today = todayStr();
     const logs = [log(0, 10, 20, 20)];
     const comps: HabitCompletion[] = [
@@ -94,10 +88,9 @@ describe("aggregate bucketing", () => {
         completedAt: isoAtLocal(0, 11),
       },
     ];
-    const sessions = [focus(0, 12, 25, 25)];
-    const points = xpByDay(logs, comps, tasks, sessions, 7);
+    const points = xpByDay(logs, comps, tasks, 7);
     expect(points[points.length - 1].value).toBe(
-      20 + XP_REWARDS.habitCompletion + XP_REWARDS.taskCompletion + 25
+      20 + XP_REWARDS.habitCompletion + XP_REWARDS.taskCompletion
     );
   });
 });

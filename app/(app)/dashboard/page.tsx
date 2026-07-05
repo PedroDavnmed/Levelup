@@ -35,7 +35,6 @@ export default function DashboardPage() {
     state.logs,
     state.completions,
     state.studyTasks,
-    state.focusSessions,
     xpRange
   );
 

@@ -11,6 +11,7 @@ const EMPTY_STATE: AppState = {
   goals: [],
   events: [],
   studyTasks: [],
+  focusSessions: [],
   achievements: [],
 };
 
@@ -22,6 +23,7 @@ const ARRAY_KEYS = [
   "goals",
   "events",
   "studyTasks",
+  "focusSessions",
   "achievements",
 ] as const;
 

@@ -23,6 +23,9 @@ function sampleState(): AppState {
       { id: "t1", title: "Read ch. 4", note: "4.1–4.3", done: true, createdAt: "2026-06-01T00:00:00Z", completedAt: "2026-06-02T09:00:00Z" },
       { id: "t2", title: "Practice", done: false, createdAt: "2026-06-03T00:00:00Z", completedAt: null },
     ],
+    focusSessions: [
+      { id: "f1", taskId: "t1", minutes: 25, startedAt: "2026-06-02T08:35:00Z", completedAt: "2026-06-02T09:00:00Z", xpAwarded: 25 },
+    ],
     achievements: [{ key: "first_workout", unlockedAt: "2026-06-01T10:00:00Z" }],
   };
 }
@@ -47,6 +50,7 @@ describe("backup round-trip", () => {
     expect(parsed!.activities).toEqual([]);
     expect(parsed!.achievements).toEqual([]);
     expect(parsed!.studyTasks).toEqual([]);
+    expect(parsed!.focusSessions).toEqual([]);
   });
 });
 

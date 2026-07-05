@@ -1,4 +1,9 @@
-import type { ActivityLog, HabitCompletion, StudyTask } from "./types";
+import type {
+  ActivityLog,
+  FocusSession,
+  HabitCompletion,
+  StudyTask,
+} from "./types";
 import { XP_REWARDS } from "./types";
 import { addDays, localDateOf, shortLabel, todayStr } from "./date";
 import type { ChartPoint } from "@/components/TrendChart";
@@ -82,12 +87,42 @@ export function studyTasksCompletedOn(
   );
 }
 
+/** Focus minutes per day over the last `n` days (bucketed by completion day). */
+export function focusMinutesByDay(
+  sessions: FocusSession[],
+  n: number
+): ChartPoint[] {
+  const dates = lastNDates(n);
+  const totals = new Map(dates.map((d) => [d, 0]));
+  for (const s of sessions) {
+    const d = dateOf(s.completedAt);
+    if (totals.has(d)) totals.set(d, totals.get(d)! + s.minutes);
+  }
+  return dates.map((d) => ({ label: shortLabel(d), value: totals.get(d)! }));
+}
+
+/** Total focus minutes, optionally limited to the last `sinceDays` days. */
+export function totalFocusMinutes(
+  sessions: FocusSession[],
+  sinceDays?: number
+): number {
+  if (sinceDays === undefined) {
+    return sessions.reduce((sum, s) => sum + s.minutes, 0);
+  }
+  const window = new Set(lastNDates(sinceDays));
+  return sessions.reduce(
+    (sum, s) => (window.has(dateOf(s.completedAt)) ? sum + s.minutes : sum),
+    0
+  );
+}
+
 /** Combined XP earned per day (activity logs + habit completions + completed
- *  study tasks). */
+ *  study tasks + focus sessions). */
 export function xpByDay(
   logs: ActivityLog[],
   completions: HabitCompletion[],
   studyTasks: StudyTask[],
+  focusSessions: FocusSession[],
   n: number
 ): ChartPoint[] {
   const dates = lastNDates(n);
@@ -106,6 +141,10 @@ export function xpByDay(
   for (const d of studyTaskDates(studyTasks)) {
     if (totals.has(d))
       totals.set(d, totals.get(d)! + XP_REWARDS.taskCompletion);
+  }
+  for (const s of focusSessions) {
+    const d = dateOf(s.completedAt);
+    if (totals.has(d)) totals.set(d, totals.get(d)! + s.xpAwarded);
   }
   return dates.map((d) => ({ label: shortLabel(d), value: totals.get(d)! }));
 }

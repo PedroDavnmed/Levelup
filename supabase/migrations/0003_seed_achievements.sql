@@ -37,7 +37,10 @@ insert into public.achievements (key, name, description, icon, sort_order) value
   ('task_100',      'Productivity Machine', 'Complete 100 tasks.',                         '⚙️', 330),
   ('all_rounder',   'All-Rounder',    'Log training, complete a study task, a habit, a goal, and a calendar task.', '🌈', 340),
   ('level_30',      'Ascendant',      'Reach level 30.',                                   '🔱', 350),
-  ('xp_25000',      'Mythic Grind',   'Earn 25,000 total XP.',                             '🌌', 360)
+  ('xp_25000',      'Mythic Grind',   'Earn 25,000 total XP.',                             '🌌', 360),
+  ('first_focus',   'Locked In',      'Complete your first focus session.',                '🔒', 370),
+  ('focus_25',      'In the Zone',    'Complete 25 focus sessions.',                       '⏳', 380),
+  ('focus_10h',     'Deep Work',      'Focus for 10 hours in total.',                      '🧘', 390)
 on conflict (key) do update set
   name = excluded.name,
   description = excluded.description,

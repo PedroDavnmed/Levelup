@@ -7,9 +7,16 @@ import {
   studyTaskDates,
   studyTaskDate,
   studyTasksCompletedOn,
+  focusMinutesByDay,
+  totalFocusMinutes,
 } from "./aggregate";
 import { todayStr } from "./date";
-import type { ActivityLog, HabitCompletion, StudyTask } from "./types";
+import type {
+  ActivityLog,
+  FocusSession,
+  HabitCompletion,
+  StudyTask,
+} from "./types";
 import { XP_REWARDS } from "./types";
 
 /** ISO timestamp for `daysAgo` ago at a given LOCAL hour. */
@@ -35,6 +42,22 @@ function log(
   };
 }
 
+function focus(
+  daysAgo: number,
+  hour: number,
+  minutes: number,
+  xp = minutes
+): FocusSession {
+  return {
+    id: `f${daysAgo}-${hour}`,
+    taskId: null,
+    minutes,
+    startedAt: isoAtLocal(daysAgo, hour),
+    completedAt: isoAtLocal(daysAgo, hour),
+    xpAwarded: xp,
+  };
+}
+
 describe("aggregate bucketing", () => {
   it("buckets a late-evening log into the correct LOCAL day (regression for the UTC-slice bug)", () => {
     // 11pm local today. In negative-UTC zones its ISO date is *tomorrow* (UTC),
@@ -56,7 +79,7 @@ describe("aggregate bucketing", () => {
     expect(points[points.length - 2].value).toBe(1); // one yesterday
   });
 
-  it("xpByDay combines activity, habit, and study-task XP on the same LOCAL day", () => {
+  it("xpByDay combines activity, habit, study-task, and focus XP on the same LOCAL day", () => {
     const today = todayStr();
     const logs = [log(0, 10, 20, 20)];
     const comps: HabitCompletion[] = [
@@ -71,10 +94,31 @@ describe("aggregate bucketing", () => {
         completedAt: isoAtLocal(0, 11),
       },
     ];
-    const points = xpByDay(logs, comps, tasks, 7);
+    const sessions = [focus(0, 12, 25, 25)];
+    const points = xpByDay(logs, comps, tasks, sessions, 7);
     expect(points[points.length - 1].value).toBe(
-      20 + XP_REWARDS.habitCompletion + XP_REWARDS.taskCompletion
+      20 + XP_REWARDS.habitCompletion + XP_REWARDS.taskCompletion + 25
     );
+  });
+});
+
+describe("focus session aggregation", () => {
+  it("focusMinutesByDay sums minutes into the correct LOCAL day", () => {
+    const points = focusMinutesByDay([focus(0, 23, 25), focus(0, 9, 50)], 7);
+    expect(points).toHaveLength(7);
+    expect(points[points.length - 1].value).toBe(75); // both today
+    expect(points.slice(0, -1).every((p) => p.value === 0)).toBe(true);
+  });
+
+  it("focusMinutesByDay excludes sessions outside the window", () => {
+    const points = focusMinutesByDay([focus(30, 12, 50)], 7);
+    expect(points.every((p) => p.value === 0)).toBe(true);
+  });
+
+  it("totalFocusMinutes sums all sessions, or only those within sinceDays", () => {
+    const sessions = [focus(0, 9, 25), focus(1, 9, 50), focus(30, 9, 40)];
+    expect(totalFocusMinutes(sessions)).toBe(115); // all
+    expect(totalFocusMinutes(sessions, 7)).toBe(75); // last 7 days only
   });
 });
 

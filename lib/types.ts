@@ -60,6 +60,17 @@ export interface StudyTask {
   date?: string;
 }
 
+/** A completed focus (Pomodoro) session — timed work, optionally tied to a
+ *  study task, that awards XP proportional to the minutes focused. */
+export interface FocusSession {
+  id: string;
+  taskId: string | null; // optional link to a StudyTask
+  minutes: number; // focused minutes credited
+  startedAt: string; // ISO
+  completedAt: string; // ISO — drives day bucketing / stats
+  xpAwarded: number;
+}
+
 export type EventType = "task" | "meeting" | "event";
 
 export interface CalendarEvent {
@@ -93,6 +104,7 @@ export interface AppState {
   goals: Goal[];
   events: CalendarEvent[];
   studyTasks: StudyTask[];
+  focusSessions: FocusSession[];
   achievements: UnlockedAchievement[];
 }
 
@@ -100,4 +112,5 @@ export const XP_REWARDS = {
   habitCompletion: 5,
   goalCompletion: 50,
   taskCompletion: 10,
+  focusPerMinute: 1, // a 25-min pomodoro = 25 XP
 } as const;

@@ -36,6 +36,7 @@ const EMPTY_STATE: AppState = {
   goals: [],
   events: [],
   studyTasks: [],
+  focusSessions: [],
   achievements: [],
 };
 
@@ -123,6 +124,7 @@ interface StoreApi {
     id: string,
     patch: { title?: string; note?: string; date?: string }
   ) => void;
+  logFocusSession: (minutes: number, taskId?: string | null) => void;
   resetAll: () => void;
   importData: (next: AppState) => void;
   celebration: Celebration | null;
@@ -599,6 +601,33 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [commit]
   );
 
+  const logFocusSession = useCallback<StoreApi["logFocusSession"]>(
+    (minutes, taskId = null) => {
+      if (minutes <= 0) return;
+      const prev = stateRef.current;
+      const xp = Math.round(minutes * XP_REWARDS.focusPerMinute);
+      const now = new Date();
+      const next: AppState = {
+        ...prev,
+        focusSessions: [
+          ...prev.focusSessions,
+          {
+            id: genId(),
+            taskId: taskId ?? null,
+            minutes,
+            // Best-effort start time (we only credit completed sessions).
+            startedAt: new Date(now.getTime() - minutes * 60_000).toISOString(),
+            completedAt: now.toISOString(),
+            xpAwarded: xp,
+          },
+        ],
+        profile: { ...prev.profile, totalXp: prev.profile.totalXp + xp },
+      };
+      commit(prev, next, xp);
+    },
+    [commit]
+  );
+
   const toggleHabitToday = useCallback<StoreApi["toggleHabitToday"]>(
     (habitId) => {
       const prev = stateRef.current;
@@ -713,6 +742,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     toggleStudyTaskDone,
     deleteStudyTask,
     updateStudyTask,
+    logFocusSession,
     resetAll,
     importData,
     celebration,

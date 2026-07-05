@@ -9,6 +9,7 @@ import {
   studyTaskDates,
   studyTaskDate,
   studyTasksCompletedOn,
+  totalFocusMinutes,
 } from "@/lib/aggregate";
 import { activeDaysConsistency, consistencyColor } from "@/lib/consistency";
 import { todayStr, addDays } from "@/lib/date";
@@ -20,7 +21,15 @@ import Modal from "@/components/Modal";
 import TrendChart from "@/components/TrendChart";
 import ProgressRing from "@/components/ProgressRing";
 import RangeToggle from "@/components/RangeToggle";
+import FocusTimer from "@/components/FocusTimer";
 import Loading from "@/components/Loading";
+
+/** "Xh Ym" (or "Ym") for a minutes total. */
+function fmtMins(m: number): string {
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  return h > 0 ? `${h}h ${min}m` : `${min}m`;
+}
 
 export default function StudyTasks() {
   const {
@@ -69,6 +78,7 @@ export default function StudyTasks() {
   const consistency = activeDaysConsistency(completedDates, range);
   const earnedXp = done.length * XP_REWARDS.taskCompletion;
   const dayXp = dayDone.length * XP_REWARDS.taskCompletion;
+  const focusMins = totalFocusMinutes(state.focusSessions, range);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -169,6 +179,10 @@ export default function StudyTasks() {
         }
       />
 
+      <div className="mb-6">
+        <FocusTimer />
+      </div>
+
       {tasks.length === 0 ? (
         <EmptyState
           icon="📚"
@@ -183,7 +197,7 @@ export default function StudyTasks() {
       ) : (
         <div className="space-y-6">
           {/* Stats */}
-          <section className="grid gap-4 sm:grid-cols-3">
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="card p-5 flex items-center gap-4">
               <ProgressRing
                 pct={consistency}
@@ -200,6 +214,11 @@ export default function StudyTasks() {
               </div>
             </div>
             <StatCard label="Tasks completed" value={done.length} />
+            <StatCard
+              label="Focus time"
+              value={fmtMins(focusMins)}
+              sub={`over the last ${range} days`}
+            />
             <StatCard
               label="XP from study"
               value={earnedXp}

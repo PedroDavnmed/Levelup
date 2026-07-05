@@ -16,6 +16,7 @@ function baseState(): AppState {
     goals: [],
     events: [],
     studyTasks: [],
+    focusSessions: [],
     achievements: [],
   };
 }

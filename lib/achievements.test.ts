@@ -19,6 +19,7 @@ function emptyState(): AppState {
     goals: [],
     events: [],
     studyTasks: [],
+    focusSessions: [],
     achievements: [],
   };
 }
@@ -31,8 +32,8 @@ function logFor(id: string, activityId: string, value = 10): ActivityLog {
 }
 
 describe("achievements catalog", () => {
-  it("stays in sync with the seed migration count (36)", () => {
-    expect(ACHIEVEMENTS.length).toBe(36);
+  it("stays in sync with the seed migration count (39)", () => {
+    expect(ACHIEVEMENTS.length).toBe(39);
   });
   it("has unique keys", () => {
     const keys = ACHIEVEMENTS.map((a) => a.key);
@@ -50,6 +51,19 @@ describe("evaluateNewAchievements", () => {
     s.activities.push(activity("t1", "training"));
     s.logs.push(logFor("l1", "t1"));
     expect(evaluateNewAchievements(s)).toContain("first_workout");
+  });
+
+  it("unlocks first_focus after one focus session", () => {
+    const s = emptyState();
+    s.focusSessions.push({
+      id: "f1",
+      taskId: null,
+      minutes: 25,
+      startedAt: "2026-06-01T08:35:00Z",
+      completedAt: "2026-06-01T09:00:00Z",
+      xpAwarded: 25,
+    });
+    expect(evaluateNewAchievements(s)).toContain("first_focus");
   });
 
   it("does not re-return an already-unlocked achievement", () => {

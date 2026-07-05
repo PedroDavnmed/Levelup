@@ -26,6 +26,8 @@ interface Metrics {
   tasksDone: number;
   eventsCount: number;
   habitsCreated: number;
+  focusSessions: number;
+  focusMinutes: number;
   allRounder: boolean;
 }
 
@@ -58,6 +60,8 @@ function metricsOf(s: AppState): Metrics {
     tasksDone,
     eventsCount: s.events.length,
     habitsCreated: s.habits.length,
+    focusSessions: s.focusSessions.length,
+    focusMinutes: s.focusSessions.reduce((sum, f) => sum + f.minutes, 0),
     allRounder:
       trainingLogs > 0 &&
       studyTasksDone > 0 &&
@@ -110,6 +114,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "all_rounder", name: "All-Rounder", description: "Log training, complete a study task, a habit, a goal, and a calendar task.", icon: "🌈", earned: (m) => m.allRounder },
   { key: "level_30", name: "Ascendant", description: "Reach level 30.", icon: "🔱", earned: (m) => m.level >= 30 },
   { key: "xp_25000", name: "Mythic Grind", description: "Earn 25,000 total XP.", icon: "🌌", earned: (m) => m.xp >= 25000 },
+
+  // Focus (Pomodoro) achievements
+  { key: "first_focus", name: "Locked In", description: "Complete your first focus session.", icon: "🔒", earned: (m) => m.focusSessions >= 1 },
+  { key: "focus_25", name: "In the Zone", description: "Complete 25 focus sessions.", icon: "⏳", earned: (m) => m.focusSessions >= 25 },
+  { key: "focus_10h", name: "Deep Work", description: "Focus for 10 hours in total.", icon: "🧘", earned: (m) => m.focusMinutes >= 600 },
 ];
 
 /** Returns keys newly earned that aren't already unlocked in state. */

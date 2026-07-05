@@ -13,8 +13,7 @@ export interface AchievementDef {
 /** Pre-computed metrics so each predicate stays cheap and readable. */
 interface Metrics {
   trainingLogs: number;
-  studyLogs: number;
-  studyMinutes: number;
+  studyTasksDone: number;
   totalLogs: number;
   completions: number;
   goalsDone: number;
@@ -34,19 +33,11 @@ function metricsOf(s: AppState): Metrics {
   const trainIds = new Set(
     s.activities.filter((a) => a.type === "training").map((a) => a.id)
   );
-  const studyIds = new Set(
-    s.activities.filter((a) => a.type === "study").map((a) => a.id)
-  );
   let trainingLogs = 0;
-  let studyLogs = 0;
-  let studyMinutes = 0;
   for (const l of s.logs) {
     if (trainIds.has(l.activityId)) trainingLogs++;
-    if (studyIds.has(l.activityId)) {
-      studyLogs++;
-      studyMinutes += l.value;
-    }
   }
+  const studyTasksDone = s.studyTasks.filter((t) => t.done).length;
   const tasksDone = s.events.filter(
     (e) => e.type === "task" && e.done
   ).length;
@@ -54,8 +45,7 @@ function metricsOf(s: AppState): Metrics {
   const goalsDone = s.goals.filter((g) => g.status === "done").length;
   return {
     trainingLogs,
-    studyLogs,
-    studyMinutes,
+    studyTasksDone,
     totalLogs: s.logs.length,
     completions,
     goalsDone,
@@ -64,13 +54,13 @@ function metricsOf(s: AppState): Metrics {
     level: levelForXp(s.profile.totalXp),
     xp: s.profile.totalXp,
     hasTraining: trainIds.size > 0,
-    hasStudy: studyIds.size > 0,
+    hasStudy: s.studyTasks.length > 0,
     tasksDone,
     eventsCount: s.events.length,
     habitsCreated: s.habits.length,
     allRounder:
       trainingLogs > 0 &&
-      studyLogs > 0 &&
+      studyTasksDone > 0 &&
       completions > 0 &&
       goalsDone > 0 &&
       tasksDone > 0,
@@ -80,15 +70,15 @@ function metricsOf(s: AppState): Metrics {
 /** Static catalog (mirrors supabase/migrations/0003_seed_achievements.sql). */
 export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "first_workout", name: "First Rep", description: "Log your first training session.", icon: "💪", earned: (m) => m.trainingLogs >= 1 },
-  { key: "first_study", name: "Open Book", description: "Log your first study session.", icon: "📚", earned: (m) => m.studyLogs >= 1 },
+  { key: "first_study", name: "Open Book", description: "Complete your first study task.", icon: "📚", earned: (m) => m.studyTasksDone >= 1 },
   { key: "first_habit", name: "Day One", description: "Complete a habit for the first time.", icon: "✅", earned: (m) => m.completions >= 1 },
-  { key: "well_rounded", name: "Well Rounded", description: "Have both a training and a study activity.", icon: "🧭", earned: (m) => m.hasTraining && m.hasStudy },
+  { key: "well_rounded", name: "Well Rounded", description: "Have a training activity and a study task.", icon: "🧭", earned: (m) => m.hasTraining && m.hasStudy },
   { key: "goal_setter", name: "Goal Setter", description: "Create your first goal.", icon: "📝", earned: (m) => m.goalsCount >= 1 },
   { key: "level_3", name: "Getting Going", description: "Reach level 3.", icon: "✨", earned: (m) => m.level >= 3 },
 
   { key: "streak_7", name: "Week Warrior", description: "Reach a 7-day streak on any habit.", icon: "🔥", earned: (m) => m.longestStreak >= 7 },
   { key: "train_25", name: "Iron Will", description: "Log 25 training sessions.", icon: "🏋️", earned: (m) => m.trainingLogs >= 25 },
-  { key: "study_10h", name: "Scholar", description: "Accumulate 10 hours (600 min) of study.", icon: "🎓", earned: (m) => m.studyMinutes >= 600 },
+  { key: "study_10h", name: "Scholar", description: "Complete 20 study tasks.", icon: "🎓", earned: (m) => m.studyTasksDone >= 20 },
   { key: "level_5", name: "Rising Star", description: "Reach level 5.", icon: "⭐", earned: (m) => m.level >= 5 },
   { key: "xp_1000", name: "Grinder", description: "Earn 1,000 total XP.", icon: "⚡", earned: (m) => m.xp >= 1000 },
   { key: "goal_crushed", name: "Goal Crusher", description: "Complete your first custom goal.", icon: "🎯", earned: (m) => m.goalsDone >= 1 },
@@ -98,7 +88,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "streak_14", name: "Fortnight", description: "Reach a 14-day streak on any habit.", icon: "🌗", earned: (m) => m.longestStreak >= 14 },
   { key: "streak_30", name: "Unbreakable", description: "Reach a 30-day streak on any habit.", icon: "⛓️", earned: (m) => m.longestStreak >= 30 },
   { key: "train_50", name: "Powerhouse", description: "Log 50 training sessions.", icon: "🦾", earned: (m) => m.trainingLogs >= 50 },
-  { key: "study_25h", name: "Deep Thinker", description: "Accumulate 25 hours (1500 min) of study.", icon: "🧠", earned: (m) => m.studyMinutes >= 1500 },
+  { key: "study_25h", name: "Deep Thinker", description: "Complete 50 study tasks.", icon: "🧠", earned: (m) => m.studyTasksDone >= 50 },
   { key: "level_10", name: "Double Digits", description: "Reach level 10.", icon: "🌟", earned: (m) => m.level >= 10 },
   { key: "xp_5000", name: "Relentless", description: "Earn 5,000 total XP.", icon: "💥", earned: (m) => m.xp >= 5000 },
   { key: "goals_5", name: "Achiever", description: "Complete 5 custom goals.", icon: "🏅", earned: (m) => m.goalsDone >= 5 },
@@ -117,7 +107,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "habit_builder", name: "Habit Builder", description: "Create 5 habits.", icon: "🧱", earned: (m) => m.habitsCreated >= 5 },
   { key: "goals_10", name: "Visionary", description: "Complete 10 custom goals.", icon: "🌠", earned: (m) => m.goalsDone >= 10 },
   { key: "task_100", name: "Productivity Machine", description: "Complete 100 tasks.", icon: "⚙️", earned: (m) => m.tasksDone >= 100 },
-  { key: "all_rounder", name: "All-Rounder", description: "Log training & study, and complete a habit, goal, and task.", icon: "🌈", earned: (m) => m.allRounder },
+  { key: "all_rounder", name: "All-Rounder", description: "Log training, complete a study task, a habit, a goal, and a calendar task.", icon: "🌈", earned: (m) => m.allRounder },
   { key: "level_30", name: "Ascendant", description: "Reach level 30.", icon: "🔱", earned: (m) => m.level >= 30 },
   { key: "xp_25000", name: "Mythic Grind", description: "Earn 25,000 total XP.", icon: "🌌", earned: (m) => m.xp >= 25000 },
 ];

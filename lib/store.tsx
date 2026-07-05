@@ -16,12 +16,13 @@ import type {
   EventType,
   Goal,
   Habit,
+  StudyTask,
 } from "./types";
 import { XP_REWARDS } from "./types";
 import { levelForXp } from "./gamification";
 import { evaluateNewAchievements, ACHIEVEMENTS } from "./achievements";
 import { rankForCount } from "./ranks";
-import { streakStats } from "./streaks";
+import { scheduledStreakStats } from "./streaks";
 import { todayStr } from "./date";
 
 const STORAGE_KEY = "levelup:v1";
@@ -34,6 +35,7 @@ const EMPTY_STATE: AppState = {
   completions: [],
   goals: [],
   events: [],
+  studyTasks: [],
   achievements: [],
 };
 
@@ -43,6 +45,14 @@ export interface Toast {
   title: string;
   detail?: string;
   icon: string;
+}
+
+/** A "big moment" signal the <Celebration> component reacts to (confetti/sound).
+ *  `nonce` changes every time so repeats of the same kind still fire. */
+export interface Celebration {
+  nonce: number;
+  kind: "level" | "badge" | "rank";
+  label?: string;
 }
 
 interface StoreApi {
@@ -63,14 +73,16 @@ interface StoreApi {
     patch: { title: string; unit: string; xpPerLog: number }
   ) => void;
   logActivity: (activityId: string, value: number, note?: string) => void;
-  addHabit: (title: string) => void;
+  addHabit: (title: string, days?: number[]) => void;
   deleteHabit: (id: string) => void;
-  updateHabit: (id: string, patch: { title: string }) => void;
+  updateHabit: (
+    id: string,
+    patch: { title: string; days?: number[] }
+  ) => void;
   toggleHabitToday: (habitId: string) => void;
   addGoal: (
     title: string,
     targetValue: number,
-    unit: string,
     deadline: string | null
   ) => void;
   addGoalProgress: (goalId: string, delta: number) => void;
@@ -80,7 +92,6 @@ interface StoreApi {
     patch: {
       title: string;
       targetValue: number;
-      unit: string;
       deadline: string | null;
     }
   ) => void;
@@ -105,7 +116,16 @@ interface StoreApi {
     }
   ) => void;
   toggleEventDone: (id: string) => void;
+  addStudyTask: (title: string, note?: string, date?: string) => void;
+  toggleStudyTaskDone: (id: string) => void;
+  deleteStudyTask: (id: string) => void;
+  updateStudyTask: (
+    id: string,
+    patch: { title?: string; note?: string; date?: string }
+  ) => void;
   resetAll: () => void;
+  importData: (next: AppState) => void;
+  celebration: Celebration | null;
 }
 
 const StoreContext = createContext<StoreApi | null>(null);
@@ -122,6 +142,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
+  const [celebration, setCelebration] = useState<Celebration | null>(null);
+  const celebrationSeq = useRef(0);
 
   // stateRef always mirrors the latest state so action creators can read a
   // synchronous snapshot, compute the full next state, and commit once.
@@ -227,6 +249,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           detail: "Keep unlocking achievements",
         });
       }
+
+      // Fire one celebration for the biggest moment this commit (confetti +
+      // optional sound; a level-up also gets the centered banner).
+      const bump = (kind: Celebration["kind"], label?: string) =>
+        setCelebration({ nonce: ++celebrationSeq.current, kind, label });
+      if (after > before) bump("level", `Level ${after}`);
+      else if (rankAfter.name !== rankBefore.name) bump("rank", rankAfter.name);
+      else if (newKeys.length) bump("badge");
     },
     [pushToast]
   );
@@ -288,8 +318,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [mutate]
   );
 
-  const addHabit = useCallback(
-    (title: string) => {
+  const addHabit = useCallback<StoreApi["addHabit"]>(
+    (title, days) => {
       mutate((prev) => ({
         ...prev,
         habits: [
@@ -301,6 +331,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             longestStreak: 0,
             lastCompletedDate: null,
             createdAt: new Date().toISOString(),
+            days,
           } satisfies Habit,
         ],
       }));
@@ -320,16 +351,36 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (id, patch) => {
       mutate((prev) => ({
         ...prev,
-        habits: prev.habits.map((h) =>
-          h.id === id ? { ...h, ...patch } : h
-        ),
+        habits: prev.habits.map((h) => {
+          if (h.id !== id) return h;
+          const merged = { ...h, ...patch };
+          // Only the schedule affects the streak, so skip the recompute on
+          // title-only edits. Compare normalized (undefined ~ every day).
+          const scheduleChanged =
+            JSON.stringify(h.days ?? null) !== JSON.stringify(merged.days ?? null);
+          if (!scheduleChanged) return merged;
+          // Re-derive the streak under the new schedule so it stays consistent
+          // with the completion history.
+          const stats = scheduledStreakStats(
+            prev.completions
+              .filter((c) => c.habitId === id)
+              .map((c) => c.completedOn),
+            merged.days
+          );
+          return {
+            ...merged,
+            currentStreak: stats.current,
+            longestStreak: stats.longest,
+            lastCompletedDate: stats.last,
+          };
+        }),
       }));
     },
     [mutate]
   );
 
   const addGoal = useCallback<StoreApi["addGoal"]>(
-    (title, targetValue, unit, deadline) => {
+    (title, targetValue, deadline) => {
       mutate((prev) => ({
         ...prev,
         goals: [
@@ -339,7 +390,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             title,
             targetValue,
             currentValue: 0,
-            unit,
             deadline,
             status: "active",
             createdAt: new Date().toISOString(),
@@ -437,10 +487,88 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [commit]
   );
 
+  // --- Study tasks (one-off to-dos) -----------------------------------
+
+  const addStudyTask = useCallback<StoreApi["addStudyTask"]>(
+    (title, note, date) => {
+      mutate((prev) => ({
+        ...prev,
+        studyTasks: [
+          ...prev.studyTasks,
+          {
+            id: genId(),
+            title,
+            note,
+            done: false,
+            createdAt: new Date().toISOString(),
+            completedAt: null,
+            date: date ?? todayStr(),
+          } satisfies StudyTask,
+        ],
+      }));
+    },
+    [mutate]
+  );
+
+  const toggleStudyTaskDone = useCallback<StoreApi["toggleStudyTaskDone"]>(
+    (id) => {
+      const prev = stateRef.current;
+      const task = prev.studyTasks.find((t) => t.id === id);
+      if (!task) return;
+      const nowDone = !task.done;
+      const xpDelta = nowDone
+        ? XP_REWARDS.taskCompletion
+        : -XP_REWARDS.taskCompletion;
+      const next: AppState = {
+        ...prev,
+        studyTasks: prev.studyTasks.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                done: nowDone,
+                completedAt: nowDone ? new Date().toISOString() : null,
+              }
+            : t
+        ),
+        profile: {
+          ...prev.profile,
+          totalXp: Math.max(0, prev.profile.totalXp + xpDelta),
+        },
+      };
+      commit(prev, next, xpDelta > 0 ? xpDelta : undefined);
+    },
+    [commit]
+  );
+
+  const deleteStudyTask = useCallback((id: string) => {
+    setState((s) => ({
+      ...s,
+      studyTasks: s.studyTasks.filter((t) => t.id !== id),
+    }));
+  }, []);
+
+  const updateStudyTask = useCallback<StoreApi["updateStudyTask"]>(
+    (id, patch) => {
+      mutate((prev) => ({
+        ...prev,
+        studyTasks: prev.studyTasks.map((t) =>
+          t.id === id ? { ...t, ...patch } : t
+        ),
+      }));
+    },
+    [mutate]
+  );
+
   // Full account reset — clears every stat back to a fresh account.
   const resetAll = useCallback(() => {
     stateRef.current = EMPTY_STATE;
     setState(EMPTY_STATE);
+  }, []);
+
+  // Replace all data from an imported backup (normalized by lib/backup.ts).
+  const importData = useCallback((next: AppState) => {
+    stateRef.current = next;
+    setState(next);
   }, []);
 
   // --- XP-bearing actions (read snapshot, commit once) ----------------
@@ -490,10 +618,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           )
         : [...prev.completions, { id: genId(), habitId, completedOn: today }];
 
-      const stats = streakStats(
+      const stats = scheduledStreakStats(
         completions
           .filter((c) => c.habitId === habitId)
-          .map((c) => c.completedOn)
+          .map((c) => c.completedOn),
+        habit.days
       );
 
       // Award on check, refund on un-check (floored at 0).
@@ -580,7 +709,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     deleteEvent,
     updateEvent,
     toggleEventDone,
+    addStudyTask,
+    toggleStudyTaskDone,
+    deleteStudyTask,
+    updateStudyTask,
     resetAll,
+    importData,
+    celebration,
   };
 
   return <StoreContext.Provider value={api}>{children}</StoreContext.Provider>;

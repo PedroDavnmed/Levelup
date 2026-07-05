@@ -7,9 +7,10 @@ import { rankForCount } from "@/lib/ranks";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { todayStr, localDateOf } from "@/lib/date";
 import { xpByDay, lastNDates } from "@/lib/aggregate";
-import { EVENT_STYLE, formatTime, shortDate } from "@/lib/calendar";
+import { upcomingItems, formatTime, shortDate } from "@/lib/calendar";
 import StatCard from "@/components/StatCard";
 import TrendChart from "@/components/TrendChart";
+import RangeToggle from "@/components/RangeToggle";
 import EmptyState from "@/components/EmptyState";
 import Modal from "@/components/Modal";
 import Link from "next/link";
@@ -29,22 +30,20 @@ export default function DashboardPage() {
     (c) => c.completedOn === today
   ).length;
   const activeGoals = state.goals.filter((g) => g.status === "active").length;
-  const xpData = xpByDay(state.logs, state.completions, 14);
+  const [xpRange, setXpRange] = useState(14);
+  const xpData = xpByDay(
+    state.logs,
+    state.completions,
+    state.studyTasks,
+    xpRange
+  );
 
   const unlockedCount = state.achievements.length;
   const rankInfo = rankForCount(unlockedCount);
 
   const upcoming = useMemo(
-    () =>
-      state.events
-        .filter((e) => e.date >= today && !e.done)
-        .sort(
-          (a, b) =>
-            a.date.localeCompare(b.date) ||
-            (a.startTime ?? "").localeCompare(b.startTime ?? "")
-        )
-        .slice(0, 5),
-    [state.events, today]
+    () => upcomingItems(state, today, 5),
+    [state, today]
   );
 
   const [showName, setShowName] = useState(false);
@@ -152,6 +151,19 @@ export default function DashboardPage() {
           icon="🚀"
           title="Let's get your stats moving"
           hint="Add a training or study activity, create a habit, or set a goal — every action earns XP and fills your charts."
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link href="/training" className="btn-primary">
+                Add training
+              </Link>
+              <Link href="/habits" className="btn-ghost border border-line">
+                New habit
+              </Link>
+              <Link href="/goals" className="btn-ghost border border-line">
+                Set a goal
+              </Link>
+            </div>
+          }
         />
       )}
 
@@ -168,7 +180,12 @@ export default function DashboardPage() {
 
       {/* XP trend */}
       <section className="card p-5">
-        <h2 className="font-semibold text-ink mb-3">XP earned · last 14 days</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-ink">
+            XP earned · last {xpRange} days
+          </h2>
+          <RangeToggle value={xpRange} onChange={setXpRange} />
+        </div>
         <TrendChart data={xpData} type="area" color="#5b7cfa" />
       </section>
 
@@ -182,18 +199,18 @@ export default function DashboardPage() {
             </Link>
           </div>
           <ul className="space-y-2">
-            {upcoming.map((e) => (
-              <li key={e.id} className="flex items-center gap-3">
+            {upcoming.map((it) => (
+              <li key={it.key} className="flex items-center gap-3">
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: EVENT_STYLE[e.type].color }}
+                  style={{ backgroundColor: it.style.color }}
                 />
                 <span className="text-sm text-ink truncate flex-1">
-                  {EVENT_STYLE[e.type].icon} {e.title}
+                  {it.style.icon} {it.title}
                 </span>
                 <span className="text-xs text-muted shrink-0">
-                  {shortDate(e.date)}
-                  {e.startTime ? ` · ${formatTime(e.startTime)}` : ""}
+                  {shortDate(it.date)}
+                  {it.startTime ? ` · ${formatTime(it.startTime)}` : ""}
                 </span>
               </li>
             ))}

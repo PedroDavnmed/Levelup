@@ -12,6 +12,7 @@ import EmptyState from "@/components/EmptyState";
 import Modal from "@/components/Modal";
 import TrendChart from "@/components/TrendChart";
 import ProgressRing from "@/components/ProgressRing";
+import RangeToggle from "@/components/RangeToggle";
 import Loading from "@/components/Loading";
 
 export default function ActivityTracker({
@@ -51,6 +52,8 @@ export default function ActivityTracker({
   const [value, setValue] = useState("");
   const [note, setNote] = useState("");
 
+  const [range, setRange] = useState(14);
+
   const activities = useMemo(
     () => state.activities.filter((a) => a.type === type),
     [state.activities, type]
@@ -75,10 +78,10 @@ export default function ActivityTracker({
     }
     return [...totals.entries()];
   }, [logs, activities]);
-  const chartData = sumByDay(logs, 14);
+  const chartData = sumByDay(logs, range);
   const consistency = activeDaysConsistency(
     logs.map((l) => localDateOf(l.loggedAt)),
-    30
+    range
   );
 
   const recent = useMemo(
@@ -156,6 +159,11 @@ export default function ActivityTracker({
           icon={icon}
           title={`No ${title.toLowerCase()} activities yet`}
           hint={`Create one (like "${type === "training" ? "Gym session" : "Read textbook"}") to start logging and earning XP.`}
+          action={
+            <button onClick={openNew} className="btn-primary">
+              + New activity
+            </button>
+          }
         />
       ) : (
         <div className="space-y-6">
@@ -171,7 +179,7 @@ export default function ActivityTracker({
               <div>
                 <p className="text-sm font-medium text-ink">Consistency</p>
                 <p className="text-xs text-muted">
-                  days active over the last 30
+                  days active over the last {range}
                 </p>
               </div>
             </div>
@@ -205,7 +213,10 @@ export default function ActivityTracker({
           </section>
 
           <section className="card p-5">
-            <h2 className="font-semibold text-ink mb-3">Last 14 days</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-ink">Last {range} days</h2>
+              <RangeToggle value={range} onChange={setRange} />
+            </div>
             <TrendChart data={chartData} type="bar" color={color} />
           </section>
 

@@ -18,6 +18,7 @@ function emptyState(): AppState {
     completions: [],
     goals: [],
     events: [],
+    studyTasks: [],
     achievements: [],
   };
 }
@@ -59,17 +60,23 @@ describe("evaluateNewAchievements", () => {
     expect(evaluateNewAchievements(s)).not.toContain("first_workout");
   });
 
-  it("unlocks all_rounder only with training+study logs, a completion, a done goal, and a done task", () => {
+  it("unlocks all_rounder only with a training log, a completed study task, a completion, a done goal, and a done task", () => {
     const s = emptyState();
-    s.activities.push(activity("t1", "training"), activity("s1", "study"));
-    s.logs.push(logFor("l1", "t1"), logFor("l2", "s1"));
+    s.activities.push(activity("t1", "training"));
+    s.logs.push(logFor("l1", "t1"));
+    s.studyTasks.push({
+      id: "st1",
+      title: "Read",
+      done: true,
+      createdAt: "2026-06-01T00:00:00Z",
+      completedAt: "2026-06-01T10:00:00Z",
+    });
     s.completions.push({ id: "c1", habitId: "h1", completedOn: "2026-06-01" } as HabitCompletion);
     s.goals.push({
       id: "g1",
       title: "G",
       targetValue: 1,
       currentValue: 1,
-      unit: "x",
       deadline: null,
       status: "done",
       createdAt: "2026-06-01T00:00:00Z",

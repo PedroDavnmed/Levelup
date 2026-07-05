@@ -25,6 +25,9 @@ export interface Habit {
   longestStreak: number;
   lastCompletedDate: string | null; // YYYY-MM-DD
   createdAt: string;
+  /** Weekday numbers (0=Sun … 6=Sat) the habit is scheduled on. Absent / empty
+   *  / all-seven means every day (backward compatible with older habits). */
+  days?: number[];
 }
 
 export interface HabitCompletion {
@@ -38,10 +41,23 @@ export interface Goal {
   title: string;
   targetValue: number;
   currentValue: number;
-  unit: string;
   deadline: string | null; // YYYY-MM-DD
   status: "active" | "done";
   createdAt: string;
+}
+
+/** A one-off study to-do: created, completed once (awards XP), then kept in a
+ *  "Done" list. Dateless, unlike CalendarEvent. */
+export interface StudyTask {
+  id: string;
+  title: string;
+  note?: string;
+  done: boolean;
+  createdAt: string; // ISO
+  completedAt: string | null; // ISO, set on completion — drives stats/chart
+  /** Due date (YYYY-MM-DD). Absent on older tasks — fall back to createdAt's
+   *  local date via `studyTaskDate()`. */
+  date?: string;
 }
 
 export type EventType = "task" | "meeting" | "event";
@@ -76,6 +92,7 @@ export interface AppState {
   completions: HabitCompletion[];
   goals: Goal[];
   events: CalendarEvent[];
+  studyTasks: StudyTask[];
   achievements: UnlockedAchievement[];
 }
 

@@ -10,6 +10,8 @@ import {
   habitConsistency,
   consistencyColor,
 } from "@/lib/consistency";
+import { studyTaskDates } from "@/lib/aggregate";
+import { allCalendarItems } from "@/lib/calendar";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import ProgressRing from "@/components/ProgressRing";
@@ -40,32 +42,31 @@ export default function StatsPage() {
     const trainIds = new Set(
       state.activities.filter((a) => a.type === "training").map((a) => a.id)
     );
-    const studyIds = new Set(
-      state.activities.filter((a) => a.type === "study").map((a) => a.id)
-    );
     const trainLogs = state.logs.filter((l) => trainIds.has(l.activityId));
-    const studyLogs = state.logs.filter((l) => studyIds.has(l.activityId));
-    const studyMinutes = studyLogs.reduce((s, l) => s + l.value, 0);
+    const studyDates = studyTaskDates(state.studyTasks);
 
     const activeDays = new Set<string>();
     state.logs.forEach((l) => activeDays.add(localDateOf(l.loggedAt)));
     state.completions.forEach((c) => activeDays.add(c.completedOn));
+    studyDates.forEach((d) => activeDays.add(d));
     state.events
       .filter((e) => e.type === "task" && e.done)
       .forEach((e) => activeDays.add(e.date));
 
+    // Tasks are unified: study tasks + calendar task-events both count.
+    const calTaskEvents = state.events.filter((e) => e.type === "task");
+    const tasksDone =
+      state.studyTasks.filter((t) => t.done).length +
+      calTaskEvents.filter((e) => e.done).length;
+    const tasksTotal = state.studyTasks.length + calTaskEvents.length;
+
     return {
       trainLogs,
-      studyLogs,
-      studyMinutes,
       trainConsistency: activeDaysConsistency(
         trainLogs.map((l) => localDateOf(l.loggedAt)),
         30
       ),
-      studyConsistency: activeDaysConsistency(
-        studyLogs.map((l) => localDateOf(l.loggedAt)),
-        30
-      ),
+      studyConsistency: activeDaysConsistency(studyDates, 30),
       habitConsistency: habitConsistency(state.habits, state.completions, 30),
       completions: state.completions.length,
       longestStreak: state.habits.reduce(
@@ -74,11 +75,12 @@ export default function StatsPage() {
       ),
       goalsDone: state.goals.filter((g) => g.status === "done").length,
       goalsActive: state.goals.filter((g) => g.status === "active").length,
-      tasksDone: state.events.filter((e) => e.type === "task" && e.done).length,
-      tasksTotal: state.events.filter((e) => e.type === "task").length,
+      tasksDone,
+      tasksTotal,
       meetings: state.events.filter((e) => e.type === "meeting").length,
       eventsKind: state.events.filter((e) => e.type === "event").length,
-      entriesTotal: state.events.length,
+      goalDeadlines: state.goals.filter((g) => g.deadline).length,
+      onCalendar: allCalendarItems(state).length,
       activeDays: activeDays.size,
     };
   }, [state]);
@@ -87,7 +89,6 @@ export default function StatsPage() {
 
   const prog = levelProgress(state.profile.totalXp);
   const rank = rankForCount(state.achievements.length);
-  const studyHours = (m.studyMinutes / 60).toFixed(1);
 
   return (
     <div>
@@ -124,8 +125,11 @@ export default function StatsPage() {
       </h2>
       <section className="grid gap-4 grid-cols-2 sm:grid-cols-4 mb-6">
         <StatCard label="Training sessions" value={m.trainLogs.length} />
-        <StatCard label="Study sessions" value={m.studyLogs.length} />
-        <StatCard label="Study hours" value={studyHours} />
+        <StatCard
+          label="Tasks done"
+          value={`${m.tasksDone}/${m.tasksTotal}`}
+          accent="text-brand-600"
+        />
         <StatCard label="Days active" value={m.activeDays} />
         <StatCard
           label="Habits completed"
@@ -149,7 +153,8 @@ export default function StatsPage() {
         />
         <StatCard label="Meetings" value={m.meetings} />
         <StatCard label="Events" value={m.eventsKind} />
-        <StatCard label="Total entries" value={m.entriesTotal} />
+        <StatCard label="Goal deadlines" value={m.goalDeadlines} />
+        <StatCard label="On calendar" value={m.onCalendar} />
       </section>
     </div>
   );

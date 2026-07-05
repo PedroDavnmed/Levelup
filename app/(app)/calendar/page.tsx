@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useStore } from "@/lib/store";
-import type { CalendarEvent, EventType } from "@/lib/types";
+import type { AppState, CalendarEvent, EventType } from "@/lib/types";
 import { todayStr } from "@/lib/date";
 import {
   WEEKDAYS,
-  EVENT_STYLE,
   monthGrid,
   monthLabel,
   addMonths,
@@ -14,10 +14,11 @@ import {
   isToday,
   prettyDate,
   formatTime,
-  eventsForDate,
-  eventHour,
+  calendarItemsForDate,
+  itemHour,
   hourLabel,
 } from "@/lib/calendar";
+import type { CalendarItem } from "@/lib/calendar";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import Loading from "@/components/Loading";
@@ -41,8 +42,29 @@ function plusOneHour(hhmm: string): string {
 }
 
 export default function CalendarPage() {
-  const { state, hydrated, addEvent, deleteEvent, updateEvent, toggleEventDone } =
-    useStore();
+  const {
+    state,
+    hydrated,
+    addEvent,
+    deleteEvent,
+    updateEvent,
+    toggleEventDone,
+    toggleStudyTaskDone,
+  } = useStore();
+
+  // Route a calendar item's checkbox to the right store action by its source.
+  function toggleItem(item: CalendarItem) {
+    if (item.source === "event") toggleEventDone(item.id);
+    else if (item.source === "study") toggleStudyTaskDone(item.id);
+  }
+  function editItem(item: CalendarItem) {
+    if (item.source !== "event") return;
+    const ev = state.events.find((e) => e.id === item.id);
+    if (ev) openEdit(ev);
+  }
+  function deleteItem(item: CalendarItem) {
+    if (item.source === "event") deleteEvent(item.id);
+  }
 
   const today = todayStr();
   const init = parseYMD(today);
@@ -134,8 +156,8 @@ export default function CalendarPage() {
 
   if (!hydrated) return <Loading />;
 
-  const dayEvents = eventsForDate(state.events, selectedDate);
-  const allDayEvents = dayEvents.filter((e) => eventHour(e) === null);
+  const dayItems = calendarItemsForDate(state, selectedDate);
+  const allDayItems = dayItems.filter((i) => itemHour(i) === null);
 
   return (
     <div>
@@ -174,7 +196,7 @@ export default function CalendarPage() {
         <MonthView
           grid={grid}
           cursor={cursor}
-          events={state.events}
+          appState={state}
           onPrev={() => goMonth(-1)}
           onNext={() => goMonth(1)}
           onPick={(d) => {
@@ -186,14 +208,14 @@ export default function CalendarPage() {
       ) : (
         <DayView
           date={selectedDate}
-          allDayEvents={allDayEvents}
-          dayEvents={dayEvents}
+          allDayItems={allDayItems}
+          dayItems={dayItems}
           onPrev={() => goDay(-1)}
           onNext={() => goDay(1)}
           onAdd={() => openAdd(selectedDate)}
-          onToggle={toggleEventDone}
-          onDelete={deleteEvent}
-          onEdit={openEdit}
+          onToggle={toggleItem}
+          onDelete={deleteItem}
+          onEdit={editItem}
         />
       )}
 
@@ -362,7 +384,7 @@ function TimeSelect({
 function MonthView({
   grid,
   cursor,
-  events,
+  appState,
   onPrev,
   onNext,
   onPick,
@@ -370,7 +392,7 @@ function MonthView({
 }: {
   grid: string[];
   cursor: { year: number; month: number };
-  events: CalendarEvent[];
+  appState: AppState;
   onPrev: () => void;
   onNext: () => void;
   onPick: (date: string) => void;
@@ -402,7 +424,7 @@ function MonthView({
         {grid.map((d) => {
           const { day, month } = parseYMD(d);
           const inMonth = month === cursor.month;
-          const dayEvents = eventsForDate(events, d);
+          const dayItems = calendarItemsForDate(appState, d);
           return (
             <button
               key={d}
@@ -420,20 +442,20 @@ function MonthView({
                 {day}
               </div>
               <div className="space-y-0.5">
-                {dayEvents.slice(0, 2).map((e) => (
+                {dayItems.slice(0, 2).map((it) => (
                   <div
-                    key={e.id}
+                    key={it.key}
                     className="truncate rounded px-1 py-0.5 text-[10px] font-medium text-white"
-                    style={{ backgroundColor: EVENT_STYLE[e.type].color }}
-                    title={e.title}
+                    style={{ backgroundColor: it.style.color }}
+                    title={it.title}
                   >
-                    {e.startTime ? `${e.startTime} ` : ""}
-                    {e.title}
+                    {it.startTime ? `${it.startTime} ` : ""}
+                    {it.title}
                   </div>
                 ))}
-                {dayEvents.length > 2 && (
+                {dayItems.length > 2 && (
                   <div className="text-[10px] text-muted">
-                    +{dayEvents.length - 2} more
+                    +{dayItems.length - 2} more
                   </div>
                 )}
               </div>
@@ -450,8 +472,8 @@ function MonthView({
 
 function DayView({
   date,
-  allDayEvents,
-  dayEvents,
+  allDayItems,
+  dayItems,
   onPrev,
   onNext,
   onAdd,
@@ -460,14 +482,14 @@ function DayView({
   onEdit,
 }: {
   date: string;
-  allDayEvents: CalendarEvent[];
-  dayEvents: CalendarEvent[];
+  allDayItems: CalendarItem[];
+  dayItems: CalendarItem[];
   onPrev: () => void;
   onNext: () => void;
   onAdd: () => void;
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
-  onEdit: (e: CalendarEvent) => void;
+  onToggle: (item: CalendarItem) => void;
+  onDelete: (item: CalendarItem) => void;
+  onEdit: (item: CalendarItem) => void;
 }) {
   return (
     <div className="card p-4">
@@ -480,18 +502,18 @@ function DayView({
         </div>
       </div>
 
-      {dayEvents.length === 0 && (
+      {dayItems.length === 0 && (
         <p className="text-sm text-muted py-8 text-center">
           Nothing scheduled. Add a task, meeting, or event.
         </p>
       )}
 
-      {allDayEvents.length > 0 && (
+      {allDayItems.length > 0 && (
         <div className="mb-3">
           <p className="text-xs uppercase tracking-wide text-muted mb-1">All day</p>
           <div className="space-y-1.5">
-            {allDayEvents.map((e) => (
-              <EventRow key={e.id} e={e} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
+            {allDayItems.map((it) => (
+              <ItemRow key={it.key} item={it} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
             ))}
           </div>
         </div>
@@ -500,8 +522,8 @@ function DayView({
       {/* Hourly timeline */}
       <div className="divide-y divide-line">
         {HOURS.map((h) => {
-          const hourEvents = dayEvents.filter((e) => eventHour(e) === h);
-          if (hourEvents.length === 0) {
+          const hourItems = dayItems.filter((it) => itemHour(it) === h);
+          if (hourItems.length === 0) {
             return (
               <div key={h} className="flex items-start gap-3 py-1.5">
                 <span className="w-14 shrink-0 text-xs text-muted pt-0.5">
@@ -517,8 +539,8 @@ function DayView({
                 {hourLabel(h)}
               </span>
               <div className="flex-1 space-y-1.5">
-                {hourEvents.map((e) => (
-                  <EventRow key={e.id} e={e} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
+                {hourItems.map((it) => (
+                  <ItemRow key={it.key} item={it} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
                 ))}
               </div>
             </div>
@@ -529,59 +551,101 @@ function DayView({
   );
 }
 
-function EventRow({
-  e,
+function ItemRow({
+  item,
   onToggle,
   onDelete,
   onEdit,
 }: {
-  e: CalendarEvent;
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
-  onEdit: (e: CalendarEvent) => void;
+  item: CalendarItem;
+  onToggle: (item: CalendarItem) => void;
+  onDelete: (item: CalendarItem) => void;
+  onEdit: (item: CalendarItem) => void;
 }) {
-  const style = EVENT_STYLE[e.type];
+  const { style } = item;
+
+  // Body (icon, title, meta) — a link for study/goal rows, plain text for events.
+  const meta = (
+    <p className="text-xs text-muted truncate">
+      {style.label}
+      {" · "}
+      {item.startTime ? formatTime(item.startTime) : "All day"}
+      {item.endTime ? ` – ${formatTime(item.endTime)}` : ""}
+      {item.notes ? ` · ${item.notes}` : ""}
+    </p>
+  );
+  const titleText = (
+    <p
+      className={`text-sm font-medium truncate ${
+        item.done ? "line-through text-muted" : "text-ink"
+      }`}
+    >
+      {style.icon} {item.title}
+    </p>
+  );
+  const body =
+    item.href != null ? (
+      <Link href={item.href} className="min-w-0 flex-1 block hover:opacity-80">
+        {titleText}
+        {meta}
+      </Link>
+    ) : item.source === "study" ? (
+      <Link href="/study" className="min-w-0 flex-1 block hover:opacity-80">
+        {titleText}
+        {meta}
+      </Link>
+    ) : (
+      <div className="min-w-0 flex-1">
+        {titleText}
+        {meta}
+      </div>
+    );
+
   return (
     <div
       className="flex items-center gap-3 rounded-lg border border-line p-2.5"
       style={{ borderLeftColor: style.color, borderLeftWidth: 4 }}
     >
-      <button
-        onClick={() => onToggle(e.id)}
-        className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 text-xs transition ${
-          e.done ? "bg-mint border-mint text-white" : "border-line text-muted hover:border-mint"
-        }`}
-        aria-label={e.done ? "Mark not done" : "Mark done"}
-        title={e.type === "task" ? "Complete task (+10 XP)" : "Mark done"}
-      >
-        {e.done ? "✓" : ""}
-      </button>
-      <div className="min-w-0 flex-1">
-        <p className={`text-sm font-medium truncate ${e.done ? "line-through text-muted" : "text-ink"}`}>
-          {style.icon} {e.title}
-        </p>
-        <p className="text-xs text-muted">
-          {style.label}
-          {" · "}
-          {e.startTime ? formatTime(e.startTime) : "All day"}
-          {e.endTime ? ` – ${formatTime(e.endTime)}` : ""}
-          {e.notes ? ` · ${e.notes}` : ""}
-        </p>
-      </div>
-      <button
-        onClick={() => onEdit(e)}
-        className="text-muted hover:text-ink text-sm px-1 shrink-0"
-        aria-label="Edit entry"
-      >
-        ✏️
-      </button>
-      <button
-        onClick={() => onDelete(e.id)}
-        className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
-        aria-label="Delete entry"
-      >
-        🗑
-      </button>
+      {item.toggleable ? (
+        <button
+          onClick={() => onToggle(item)}
+          className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 text-xs transition ${
+            item.done ? "bg-mint border-mint text-white" : "border-line text-muted hover:border-mint"
+          }`}
+          aria-label={item.done ? "Mark not done" : "Mark done"}
+          title={item.source === "study" ? "Complete study task (+10 XP)" : "Mark done"}
+        >
+          {item.done ? "✓" : ""}
+        </button>
+      ) : (
+        <span
+          className="grid h-6 w-6 shrink-0 place-items-center text-sm"
+          aria-hidden
+        >
+          {style.icon}
+        </span>
+      )}
+
+      {body}
+
+      {item.source === "event" && (
+        <>
+          <button
+            onClick={() => onEdit(item)}
+            className="text-muted hover:text-ink text-sm px-1 shrink-0"
+            aria-label="Edit entry"
+          >
+            ✏️
+          </button>
+          <button
+            onClick={() => onDelete(item)}
+            className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
+            aria-label="Delete entry"
+          >
+            🗑
+          </button>
+        </>
+      )}
     </div>
   );
 }

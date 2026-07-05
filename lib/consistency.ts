@@ -1,5 +1,5 @@
 import type { Habit, HabitCompletion } from "./types";
-import { todayStr, dayDiff, addDays, localDateOf } from "./date";
+import { todayStr, dayDiff, addDays, localDateOf, isScheduled } from "./date";
 
 /**
  * "Show-up" consistency for activity trackers (training / study):
@@ -43,6 +43,7 @@ export function habitConsistency(
     const days = dayDiff(start, today) + 1;
     for (let i = 0; i < days; i++) {
       const d = addDays(start, i);
+      if (!isScheduled(d, h.days)) continue; // only scheduled days are expected
       expected++;
       if (done.has(`${h.id}|${d}`)) completed++;
     }

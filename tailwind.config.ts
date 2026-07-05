@@ -40,9 +40,17 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(6px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        confetti: {
+          "0%": { transform: "translateY(-10vh) rotate(0deg)", opacity: "1" },
+          "100%": {
+            transform: "translateY(105vh) rotate(720deg)",
+            opacity: "0",
+          },
+        },
       },
       animation: {
         fadeIn: "fadeIn 0.2s ease-out",
+        confettiFall: "confetti 1.4s ease-in forwards",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],

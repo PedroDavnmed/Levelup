@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { todayStr } from "@/lib/date";
-import { liveStreak } from "@/lib/streaks";
+import { liveScheduledStreak } from "@/lib/streaks";
 import { completionsByDay } from "@/lib/aggregate";
 import { habitConsistency, consistencyColor } from "@/lib/consistency";
 import PageHeader from "@/components/PageHeader";
@@ -11,7 +11,18 @@ import EmptyState from "@/components/EmptyState";
 import Modal from "@/components/Modal";
 import TrendChart from "@/components/TrendChart";
 import ProgressRing from "@/components/ProgressRing";
+import RangeToggle from "@/components/RangeToggle";
 import Loading from "@/components/Loading";
+
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+
+/** "Mon · Wed · Fri", or null for an every-day habit. */
+function scheduleText(days?: number[]): string | null {
+  if (!days || days.length === 0 || days.length >= 7) return null;
+  return [...days].sort((a, b) => a - b).map((d) => DAY_NAMES[d]).join(" · ");
+}
 
 export default function HabitsPage() {
   const { state, hydrated, addHabit, deleteHabit, updateHabit, toggleHabitToday } =
@@ -19,32 +30,48 @@ export default function HabitsPage() {
   const [showNew, setShowNew] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
+  const [days, setDays] = useState<number[]>(ALL_DAYS);
+  const [range, setRange] = useState(14);
 
   const today = todayStr();
   const doneTodayCount = useMemo(
     () => state.completions.filter((c) => c.completedOn === today).length,
     [state.completions, today]
   );
-  const chartData = completionsByDay(state.completions, 14);
-  const consistency = habitConsistency(state.habits, state.completions, 30);
+  const chartData = completionsByDay(state.completions, range);
+  const consistency = habitConsistency(state.habits, state.completions, range);
+
+  // Normalize selection: 0 or all-7 days means "every day" (stored as undefined).
+  const scheduleDays =
+    days.length === 0 || days.length >= 7
+      ? undefined
+      : [...days].sort((a, b) => a - b);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    if (editId) updateHabit(editId, { title: title.trim() });
-    else addHabit(title.trim());
+    if (editId) updateHabit(editId, { title: title.trim(), days: scheduleDays });
+    else addHabit(title.trim(), scheduleDays);
     closeForm();
+  }
+
+  function toggleDay(d: number) {
+    setDays((cur) =>
+      cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]
+    );
   }
 
   function openNew() {
     setEditId(null);
     setTitle("");
+    setDays(ALL_DAYS);
     setShowNew(true);
   }
 
-  function openEdit(id: string, currentTitle: string) {
-    setEditId(id);
-    setTitle(currentTitle);
+  function openEdit(h: (typeof state.habits)[number]) {
+    setEditId(h.id);
+    setTitle(h.title);
+    setDays(h.days && h.days.length ? h.days : ALL_DAYS);
     setShowNew(false);
   }
 
@@ -52,6 +79,7 @@ export default function HabitsPage() {
     setShowNew(false);
     setEditId(null);
     setTitle("");
+    setDays(ALL_DAYS);
   }
 
   if (!hydrated) return <Loading />;
@@ -74,6 +102,11 @@ export default function HabitsPage() {
           icon="🔥"
           title="No habits yet"
           hint='Add a daily habit like "Drink water" or "Read 10 pages" and keep the streak alive.'
+          action={
+            <button onClick={openNew} className="btn-primary">
+              + New habit
+            </button>
+          }
         />
       ) : (
         <div className="space-y-6">
@@ -88,7 +121,7 @@ export default function HabitsPage() {
             <div>
               <p className="font-medium text-ink">Daily consistency</p>
               <p className="text-xs text-muted">
-                share of habit-days completed over the last 30 days — skip a
+                share of habit-days completed over the last {range} days — skip a
                 planned day and it drops
               </p>
             </div>
@@ -99,11 +132,13 @@ export default function HabitsPage() {
               const done = state.completions.some(
                 (c) => c.habitId === h.id && c.completedOn === today
               );
-              const streak = liveStreak(
+              const streak = liveScheduledStreak(
                 h.lastCompletedDate,
                 h.currentStreak,
+                h.days,
                 today
               );
+              const sched = scheduleText(h.days);
               return (
                 <div key={h.id} className="card p-4 flex items-center gap-4">
                   <button
@@ -121,10 +156,11 @@ export default function HabitsPage() {
                     <p className="font-medium text-ink truncate">{h.title}</p>
                     <p className="text-xs text-muted">
                       🔥 {streak} day streak · best {h.longestStreak}
+                      {sched ? ` · ${sched}` : ""}
                     </p>
                   </div>
                   <button
-                    onClick={() => openEdit(h.id, h.title)}
+                    onClick={() => openEdit(h)}
                     className="text-muted hover:text-ink text-sm px-1 shrink-0"
                     aria-label="Edit habit"
                   >
@@ -146,9 +182,12 @@ export default function HabitsPage() {
           </section>
 
           <section className="card p-5">
-            <h2 className="font-semibold text-ink mb-3">
-              Completions · last 14 days
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-ink">
+                Completions · last {range} days
+              </h2>
+              <RangeToggle value={range} onChange={setRange} />
+            </div>
             <TrendChart data={chartData} type="bar" color="#f6c66b" />
           </section>
         </div>
@@ -172,6 +211,32 @@ export default function HabitsPage() {
               placeholder="Drink 2L water"
               autoFocus
             />
+          </div>
+          <div>
+            <label className="label">Repeat on</label>
+            <div className="flex gap-1.5">
+              {DAY_LABELS.map((lbl, d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => toggleDay(d)}
+                  aria-pressed={days.includes(d)}
+                  aria-label={DAY_NAMES[d]}
+                  className={`grid h-9 w-9 place-items-center rounded-lg border text-xs font-medium transition ${
+                    days.includes(d)
+                      ? "border-brand-500 bg-brand-500 text-white"
+                      : "border-line text-muted hover:border-brand-400"
+                  }`}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-muted">
+              {scheduleDays
+                ? "Only the selected days count toward your streak."
+                : "Every day."}
+            </p>
           </div>
           {!editId && (
             <p className="text-xs text-muted">

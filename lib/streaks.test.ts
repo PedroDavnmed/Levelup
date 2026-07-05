@@ -1,6 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { nextStreak, liveStreak, streakStats } from "./streaks";
+import {
+  nextStreak,
+  liveStreak,
+  streakStats,
+  scheduledStreakStats,
+  liveScheduledStreak,
+} from "./streaks";
 import { dayDiff, addDays } from "./date";
+
+// 2026-06: Mon 01, Wed 03, Fri 05, Mon 08, Wed 10, Fri 12 …
+const MWF = [1, 3, 5];
 
 describe("date helpers", () => {
   it("dayDiff counts whole days", () => {
@@ -91,5 +100,55 @@ describe("streakStats", () => {
     // Re-check today -> back to 3, not stuck at 2.
     const rechecked = streakStats([...base, today]);
     expect(rechecked).toEqual(checked);
+  });
+});
+
+describe("scheduledStreakStats", () => {
+  it("with no schedule, equals streakStats (every day)", () => {
+    const dates = ["2026-06-26", "2026-06-27", "2026-06-28"];
+    expect(scheduledStreakStats(dates, undefined)).toEqual(streakStats(dates));
+  });
+
+  it("counts consecutive scheduled days (Mon/Wed/Fri)", () => {
+    // Mon 01 -> Wed 03 -> Fri 05 are consecutive scheduled days.
+    const stats = scheduledStreakStats(
+      ["2026-06-01", "2026-06-03", "2026-06-05"],
+      MWF
+    );
+    expect(stats).toEqual({ current: 3, longest: 3, last: "2026-06-05" });
+  });
+
+  it("breaks the streak when a scheduled day is missed", () => {
+    // Missing Wed 03 between Mon 01 and Fri 05.
+    const stats = scheduledStreakStats(["2026-06-01", "2026-06-05"], MWF);
+    expect(stats.current).toBe(1);
+    expect(stats.last).toBe("2026-06-05");
+  });
+
+  it("ignores off-schedule completions (they don't extend the streak)", () => {
+    // Tue 02 is not scheduled; the streak is still Mon 01 -> Wed 03 = 2.
+    const stats = scheduledStreakStats(
+      ["2026-06-01", "2026-06-02", "2026-06-03"],
+      MWF
+    );
+    expect(stats.current).toBe(2);
+    expect(stats.last).toBe("2026-06-03"); // last reflects all completions
+  });
+});
+
+describe("liveScheduledStreak", () => {
+  it("stays alive until the next scheduled day passes uncompleted", () => {
+    // Last done Fri 05 (streak 3).
+    expect(liveScheduledStreak("2026-06-05", 3, MWF, "2026-06-06")).toBe(3); // Sat
+    expect(liveScheduledStreak("2026-06-05", 3, MWF, "2026-06-08")).toBe(3); // next Mon, not yet missed
+    expect(liveScheduledStreak("2026-06-05", 3, MWF, "2026-06-09")).toBe(0); // Tue: Monday was missed
+  });
+  it("matches liveStreak for an every-day habit", () => {
+    expect(liveScheduledStreak("2026-06-27", 5, undefined, "2026-06-28")).toBe(
+      liveStreak("2026-06-27", 5, "2026-06-28")
+    );
+    expect(liveScheduledStreak("2026-06-25", 5, undefined, "2026-06-28")).toBe(
+      liveStreak("2026-06-25", 5, "2026-06-28")
+    );
   });
 });

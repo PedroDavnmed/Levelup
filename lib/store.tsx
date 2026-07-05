@@ -16,6 +16,7 @@ import type {
   EventType,
   Goal,
   Habit,
+  StudyTask,
 } from "./types";
 import { XP_REWARDS } from "./types";
 import { levelForXp } from "./gamification";
@@ -34,6 +35,7 @@ const EMPTY_STATE: AppState = {
   completions: [],
   goals: [],
   events: [],
+  studyTasks: [],
   achievements: [],
 };
 
@@ -81,7 +83,6 @@ interface StoreApi {
   addGoal: (
     title: string,
     targetValue: number,
-    unit: string,
     deadline: string | null
   ) => void;
   addGoalProgress: (goalId: string, delta: number) => void;
@@ -91,7 +92,6 @@ interface StoreApi {
     patch: {
       title: string;
       targetValue: number;
-      unit: string;
       deadline: string | null;
     }
   ) => void;
@@ -116,6 +116,13 @@ interface StoreApi {
     }
   ) => void;
   toggleEventDone: (id: string) => void;
+  addStudyTask: (title: string, note?: string, date?: string) => void;
+  toggleStudyTaskDone: (id: string) => void;
+  deleteStudyTask: (id: string) => void;
+  updateStudyTask: (
+    id: string,
+    patch: { title?: string; note?: string; date?: string }
+  ) => void;
   resetAll: () => void;
   importData: (next: AppState) => void;
   celebration: Celebration | null;
@@ -346,9 +353,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         habits: prev.habits.map((h) => {
           if (h.id !== id) return h;
-          // Re-derive the streak under the (possibly new) schedule so it stays
-          // consistent with the completion history.
           const merged = { ...h, ...patch };
+          // Only the schedule affects the streak, so skip the recompute on
+          // title-only edits. Compare normalized (undefined ~ every day).
+          const scheduleChanged =
+            JSON.stringify(h.days ?? null) !== JSON.stringify(merged.days ?? null);
+          if (!scheduleChanged) return merged;
+          // Re-derive the streak under the new schedule so it stays consistent
+          // with the completion history.
           const stats = scheduledStreakStats(
             prev.completions
               .filter((c) => c.habitId === id)
@@ -368,7 +380,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addGoal = useCallback<StoreApi["addGoal"]>(
-    (title, targetValue, unit, deadline) => {
+    (title, targetValue, deadline) => {
       mutate((prev) => ({
         ...prev,
         goals: [
@@ -378,7 +390,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             title,
             targetValue,
             currentValue: 0,
-            unit,
             deadline,
             status: "active",
             createdAt: new Date().toISOString(),
@@ -474,6 +485,78 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       commit(prev, next, xpDelta > 0 ? xpDelta : undefined);
     },
     [commit]
+  );
+
+  // --- Study tasks (one-off to-dos) -----------------------------------
+
+  const addStudyTask = useCallback<StoreApi["addStudyTask"]>(
+    (title, note, date) => {
+      mutate((prev) => ({
+        ...prev,
+        studyTasks: [
+          ...prev.studyTasks,
+          {
+            id: genId(),
+            title,
+            note,
+            done: false,
+            createdAt: new Date().toISOString(),
+            completedAt: null,
+            date: date ?? todayStr(),
+          } satisfies StudyTask,
+        ],
+      }));
+    },
+    [mutate]
+  );
+
+  const toggleStudyTaskDone = useCallback<StoreApi["toggleStudyTaskDone"]>(
+    (id) => {
+      const prev = stateRef.current;
+      const task = prev.studyTasks.find((t) => t.id === id);
+      if (!task) return;
+      const nowDone = !task.done;
+      const xpDelta = nowDone
+        ? XP_REWARDS.taskCompletion
+        : -XP_REWARDS.taskCompletion;
+      const next: AppState = {
+        ...prev,
+        studyTasks: prev.studyTasks.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                done: nowDone,
+                completedAt: nowDone ? new Date().toISOString() : null,
+              }
+            : t
+        ),
+        profile: {
+          ...prev.profile,
+          totalXp: Math.max(0, prev.profile.totalXp + xpDelta),
+        },
+      };
+      commit(prev, next, xpDelta > 0 ? xpDelta : undefined);
+    },
+    [commit]
+  );
+
+  const deleteStudyTask = useCallback((id: string) => {
+    setState((s) => ({
+      ...s,
+      studyTasks: s.studyTasks.filter((t) => t.id !== id),
+    }));
+  }, []);
+
+  const updateStudyTask = useCallback<StoreApi["updateStudyTask"]>(
+    (id, patch) => {
+      mutate((prev) => ({
+        ...prev,
+        studyTasks: prev.studyTasks.map((t) =>
+          t.id === id ? { ...t, ...patch } : t
+        ),
+      }));
+    },
+    [mutate]
   );
 
   // Full account reset — clears every stat back to a fresh account.
@@ -626,6 +709,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     deleteEvent,
     updateEvent,
     toggleEventDone,
+    addStudyTask,
+    toggleStudyTaskDone,
+    deleteStudyTask,
+    updateStudyTask,
     resetAll,
     importData,
     celebration,

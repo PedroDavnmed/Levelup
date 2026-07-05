@@ -11,6 +11,7 @@ import EmptyState from "@/components/EmptyState";
 import Modal from "@/components/Modal";
 import TrendChart from "@/components/TrendChart";
 import ProgressRing from "@/components/ProgressRing";
+import RangeToggle from "@/components/RangeToggle";
 import Loading from "@/components/Loading";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -30,14 +31,15 @@ export default function HabitsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [days, setDays] = useState<number[]>(ALL_DAYS);
+  const [range, setRange] = useState(14);
 
   const today = todayStr();
   const doneTodayCount = useMemo(
     () => state.completions.filter((c) => c.completedOn === today).length,
     [state.completions, today]
   );
-  const chartData = completionsByDay(state.completions, 14);
-  const consistency = habitConsistency(state.habits, state.completions, 30);
+  const chartData = completionsByDay(state.completions, range);
+  const consistency = habitConsistency(state.habits, state.completions, range);
 
   // Normalize selection: 0 or all-7 days means "every day" (stored as undefined).
   const scheduleDays =
@@ -119,7 +121,7 @@ export default function HabitsPage() {
             <div>
               <p className="font-medium text-ink">Daily consistency</p>
               <p className="text-xs text-muted">
-                share of habit-days completed over the last 30 days — skip a
+                share of habit-days completed over the last {range} days — skip a
                 planned day and it drops
               </p>
             </div>
@@ -180,9 +182,12 @@ export default function HabitsPage() {
           </section>
 
           <section className="card p-5">
-            <h2 className="font-semibold text-ink mb-3">
-              Completions · last 14 days
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-ink">
+                Completions · last {range} days
+              </h2>
+              <RangeToggle value={range} onChange={setRange} />
+            </div>
             <TrendChart data={chartData} type="bar" color="#f6c66b" />
           </section>
         </div>

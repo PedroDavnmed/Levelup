@@ -24,10 +24,20 @@ export default function Celebration() {
 
   useEffect(() => {
     if (!celebration) return;
-    setBurst(celebration.nonce);
     if (isSoundEnabled()) playChime();
 
-    const timers = [setTimeout(() => setBurst(null), 2000)];
+    // Respect users who prefer reduced motion: keep the chime + banner but skip
+    // the confetti animation.
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    if (!reduceMotion) {
+      setBurst(celebration.nonce);
+      // Longest piece runs delay(≤0.3s) + duration(≤1.9s) ≈ 2.2s; clear after.
+      timers.push(setTimeout(() => setBurst(null), 2400));
+    }
     if (celebration.kind === "level" && celebration.label) {
       setBanner(celebration.label);
       timers.push(setTimeout(() => setBanner(null), 2500));

@@ -18,7 +18,6 @@ export default function GoalsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [target, setTarget] = useState("");
-  const [unit, setUnit] = useState("");
   const [deadline, setDeadline] = useState("");
 
   const [progressFor, setProgressFor] = useState<string | null>(null);
@@ -32,11 +31,10 @@ export default function GoalsPage() {
       updateGoal(editId, {
         title: title.trim(),
         targetValue: t,
-        unit: unit.trim(),
         deadline: deadline || null,
       });
     } else {
-      addGoal(title.trim(), t, unit.trim(), deadline || null);
+      addGoal(title.trim(), t, deadline || null);
     }
     closeForm();
   }
@@ -45,7 +43,6 @@ export default function GoalsPage() {
     setEditId(null);
     setTitle("");
     setTarget("");
-    setUnit("");
     setDeadline("");
     setShowNew(true);
   }
@@ -54,7 +51,6 @@ export default function GoalsPage() {
     setEditId(g.id);
     setTitle(g.title);
     setTarget(String(g.targetValue));
-    setUnit(g.unit);
     setDeadline(g.deadline ?? "");
     setShowNew(false);
   }
@@ -64,7 +60,6 @@ export default function GoalsPage() {
     setEditId(null);
     setTitle("");
     setTarget("");
-    setUnit("");
     setDeadline("");
   }
 
@@ -129,7 +124,7 @@ export default function GoalsPage() {
                     )}
                   </p>
                   <p className="text-xs text-muted">
-                    {g.currentValue} / {g.targetValue} {g.unit}
+                    {g.currentValue} / {g.targetValue}
                     {g.deadline && (
                       <span
                         className={
@@ -220,25 +215,15 @@ export default function GoalsPage() {
               />
             </div>
             <div>
-              <label className="label" htmlFor="goal-unit">Unit</label>
+              <label className="label" htmlFor="goal-deadline">Deadline (optional)</label>
               <input
-                id="goal-unit"
+                id="goal-deadline"
+                type="date"
                 className="input"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                placeholder="km"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
               />
             </div>
-          </div>
-          <div>
-            <label className="label" htmlFor="goal-deadline">Deadline (optional)</label>
-            <input
-              id="goal-deadline"
-              type="date"
-              className="input"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-            />
           </div>
           {!editId && (
             <p className="text-xs text-muted">Completing a goal earns +50 XP.</p>

@@ -10,6 +10,7 @@ const EMPTY_STATE: AppState = {
   completions: [],
   goals: [],
   events: [],
+  studyTasks: [],
   achievements: [],
 };
 
@@ -20,6 +21,7 @@ const ARRAY_KEYS = [
   "completions",
   "goals",
   "events",
+  "studyTasks",
   "achievements",
 ] as const;
 
@@ -60,12 +62,21 @@ export function parseBackup(text: string): AppState | null {
   if (!raw || typeof raw !== "object") return null;
 
   const obj = raw as Record<string, unknown>;
-  // Must at least carry a profile object…
+  // Must at least carry a profile object with a numeric totalXp — otherwise the
+  // XP/level math becomes NaN app-wide after import.
   if (!obj.profile || typeof obj.profile !== "object") return null;
+  const profile = obj.profile as Record<string, unknown>;
+  if (typeof profile.totalXp !== "number" || !Number.isFinite(profile.totalXp))
+    return null;
   // …and any present collection must actually be an array.
   for (const k of ARRAY_KEYS) {
     if (k in obj && !Array.isArray(obj[k])) return null;
   }
 
-  return { ...EMPTY_STATE, ...(obj as Partial<AppState>) } as AppState;
+  return {
+    ...EMPTY_STATE,
+    ...(obj as Partial<AppState>),
+    // Deep-merge the profile so a missing displayName falls back sensibly.
+    profile: { ...EMPTY_STATE.profile, ...(profile as Partial<AppState["profile"]>) },
+  } as AppState;
 }

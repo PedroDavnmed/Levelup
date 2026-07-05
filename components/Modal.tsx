@@ -19,6 +19,13 @@ export default function Modal({
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Keep the latest onClose in a ref so the focus/scroll/keydown effect below
+  // depends only on `open` — otherwise an inline onClose (a new function every
+  // render) would re-run the effect on each keystroke and yank focus back to
+  // the first focusable field.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
 
@@ -37,7 +44,7 @@ export default function Modal({
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab" || !panel) return;
@@ -62,7 +69,7 @@ export default function Modal({
       document.body.style.overflow = prevOverflow;
       previouslyFocused?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import type { ActivityType } from "@/lib/types";
@@ -24,7 +25,7 @@ export default function ActivityTracker({
   unitOptions,
 }: {
   type: ActivityType;
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   color: string;
   defaultUnit: string;
@@ -188,7 +189,7 @@ export default function ActivityTracker({
               <p className="text-sm text-muted">Total logged</p>
               {totalsByUnit.length <= 1 ? (
                 <>
-                  <p className="mt-1 text-3xl font-bold text-brand-600">
+                  <p className="mt-1 text-3xl font-bold text-brand-400">
                     {totalsByUnit[0]?.[1] ?? 0}
                   </p>
                   {totalsByUnit[0] && (
@@ -200,7 +201,7 @@ export default function ActivityTracker({
               ) : (
                 <div className="mt-1 space-y-0.5">
                   {totalsByUnit.map(([unit, total]) => (
-                    <p key={unit} className="text-xl font-bold text-brand-600">
+                    <p key={unit} className="text-xl font-bold text-brand-400">
                       {total}{" "}
                       <span className="text-xs font-normal text-muted">
                         {unit}
@@ -244,7 +245,7 @@ export default function ActivityTracker({
                       className="text-muted hover:text-ink text-sm px-1"
                       aria-label="Edit activity"
                     >
-                      ✏️
+                      <Pencil size={15} aria-hidden />
                     </button>
                     <button
                       onClick={() => {
@@ -254,7 +255,7 @@ export default function ActivityTracker({
                       className="text-muted hover:text-red-500 text-sm px-1"
                       aria-label="Delete activity"
                     >
-                      🗑
+                      <Trash2 size={15} aria-hidden />
                     </button>
                   </div>
                 </div>

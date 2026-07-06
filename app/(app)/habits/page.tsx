@@ -1,5 +1,6 @@
 "use client";
 
+import { Flame, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { todayStr } from "@/lib/date";
@@ -88,7 +89,7 @@ export default function HabitsPage() {
     <div>
       <PageHeader
         title="Habits"
-        icon="🔥"
+        icon={<Flame size={22} aria-hidden />}
         subtitle={`${doneTodayCount}/${state.habits.length} done today`}
         action={
           <button onClick={openNew} className="btn-primary">
@@ -99,7 +100,7 @@ export default function HabitsPage() {
 
       {state.habits.length === 0 ? (
         <EmptyState
-          icon="🔥"
+          icon={<Flame size={22} aria-hidden />}
           title="No habits yet"
           hint='Add a daily habit like "Drink water" or "Read 10 pages" and keep the streak alive.'
           action={
@@ -164,7 +165,7 @@ export default function HabitsPage() {
                     className="text-muted hover:text-ink text-sm px-1 shrink-0"
                     aria-label="Edit habit"
                   >
-                    ✏️
+                    <Pencil size={15} aria-hidden />
                   </button>
                   <button
                     onClick={() => {
@@ -174,7 +175,7 @@ export default function HabitsPage() {
                     className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
                     aria-label="Delete habit"
                   >
-                    🗑
+                    <Trash2 size={15} aria-hidden />
                   </button>
                 </div>
               );
@@ -188,7 +189,7 @@ export default function HabitsPage() {
               </h2>
               <RangeToggle value={range} onChange={setRange} />
             </div>
-            <TrendChart data={chartData} type="bar" color="#f6c66b" />
+            <TrendChart data={chartData} type="bar" color="#FFB454" />
           </section>
         </div>
       )}

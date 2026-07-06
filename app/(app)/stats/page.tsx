@@ -1,5 +1,6 @@
 "use client";
 
+import { BarChart3 } from "lucide-react";
 import { useMemo } from "react";
 import { useStore } from "@/lib/store";
 import { levelProgress } from "@/lib/gamification";
@@ -94,7 +95,7 @@ export default function StatsPage() {
     <div>
       <PageHeader
         title="Stats"
-        icon="📊"
+        icon={<BarChart3 size={22} aria-hidden />}
         subtitle="Every metric you've built up"
       />
 
@@ -110,7 +111,7 @@ export default function StatsPage() {
         Progression
       </h2>
       <section className="grid gap-4 grid-cols-2 sm:grid-cols-4 mb-6">
-        <StatCard label="Level" value={prog.level} accent="text-brand-600" />
+        <StatCard label="Level" value={prog.level} accent="text-brand-400" />
         <StatCard label="Total XP" value={state.profile.totalXp} />
         <StatCard label="Rank" value={`${rank.rank.icon} ${rank.rank.name}`} />
         <StatCard
@@ -128,13 +129,13 @@ export default function StatsPage() {
         <StatCard
           label="Tasks done"
           value={`${m.tasksDone}/${m.tasksTotal}`}
-          accent="text-brand-600"
+          accent="text-brand-400"
         />
         <StatCard label="Days active" value={m.activeDays} />
         <StatCard
           label="Habits completed"
           value={m.completions}
-          accent="text-brand-600"
+          accent="text-brand-400"
         />
         <StatCard label="Longest streak" value={`${m.longestStreak}🔥`} />
         <StatCard label="Goals completed" value={m.goalsDone} />
@@ -149,7 +150,7 @@ export default function StatsPage() {
         <StatCard
           label="Tasks done"
           value={`${m.tasksDone}/${m.tasksTotal}`}
-          accent="text-brand-600"
+          accent="text-brand-400"
         />
         <StatCard label="Meetings" value={m.meetings} />
         <StatCard label="Events" value={m.eventsKind} />

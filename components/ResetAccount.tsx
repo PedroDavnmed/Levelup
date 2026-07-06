@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { useStore } from "@/lib/store";
 import Modal from "@/components/Modal";
 
@@ -32,12 +33,12 @@ export default function ResetAccount() {
         onClick={() => setOpen(true)}
         className="btn-ghost w-full justify-start text-xs text-red-500 hover:bg-red-500/10 hover:text-red-500"
       >
-        ⚠ Reset account
+        <AlertTriangle size={14} aria-hidden /> Reset account
       </button>
 
       <Modal open={open} onClose={close} title="Reset account?">
         <div className="space-y-4">
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
             This permanently erases <strong>everything</strong>: your XP, level,
             rank, activities, logs, habits, streaks, goals, calendar entries, and
             achievements. This cannot be undone.

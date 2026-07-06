@@ -17,7 +17,7 @@ export default async function Landing() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
       <div className="max-w-xl">
-        <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-600">
+        <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-400">
           ⚡ Level up your real life
         </div>
         <h1 className="mt-6 text-4xl sm:text-5xl font-bold tracking-tight text-ink">

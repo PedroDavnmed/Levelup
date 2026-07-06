@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useStore } from "@/lib/store";
@@ -163,7 +164,7 @@ export default function CalendarPage() {
     <div>
       <PageHeader
         title="Calendar"
-        icon="🗓️"
+        icon={<CalendarDays size={22} aria-hidden />}
         subtitle="Track tasks, meetings & events by day and hour"
         action={
           <button onClick={() => openAdd(selectedDate)} className="btn-primary">
@@ -298,7 +299,7 @@ export default function CalendarPage() {
                     type="button"
                     onClick={() => pickTime(p.time)}
                     className={`btn-ghost border border-line px-2.5 py-1 text-xs ${
-                      startTime === p.time ? "border-brand-500 text-brand-600" : ""
+                      startTime === p.time ? "border-brand-500 text-brand-400" : ""
                     }`}
                   >
                     {p.label}
@@ -436,7 +437,7 @@ function MonthView({
             >
               <div
                 className={`text-xs font-medium mb-1 ${
-                  isToday(d) ? "text-brand-600" : "text-ink"
+                  isToday(d) ? "text-brand-400" : "text-ink"
                 }`}
               >
                 {day}
@@ -635,14 +636,14 @@ function ItemRow({
             className="text-muted hover:text-ink text-sm px-1 shrink-0"
             aria-label="Edit entry"
           >
-            ✏️
+            <Pencil size={15} aria-hidden />
           </button>
           <button
             onClick={() => onDelete(item)}
             className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
             aria-label="Delete entry"
           >
-            🗑
+            <Trash2 size={15} aria-hidden />
           </button>
         </>
       )}

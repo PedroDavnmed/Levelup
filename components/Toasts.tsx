@@ -26,7 +26,10 @@ export default function Toasts() {
             STYLES[t.kind] ?? ""
           }`}
         >
-          <span className="text-2xl" aria-hidden>
+          <span
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-lg"
+            aria-hidden
+          >
             {t.icon}
           </span>
           <span className="min-w-0">

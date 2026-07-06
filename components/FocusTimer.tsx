@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Pause, Play, RotateCcw } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { isSoundEnabled, playChime } from "@/lib/sound";
 
@@ -86,7 +87,13 @@ export default function FocusTimer() {
   }
 
   return (
-    <section className="card p-5">
+    // Running = earned light: the card breathes a soft brand glow (static
+    // glow under prefers-reduced-motion via the global animation kill).
+    <section
+      className={`card p-5 transition-colors duration-300 ${
+        running ? "border-brand-500/50 animate-breathe" : ""
+      }`}
+    >
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-ink">Focus timer</h2>
         <div className="flex items-center gap-2">
@@ -143,7 +150,8 @@ export default function FocusTimer() {
             className="btn-primary flex-1 disabled:opacity-40"
             aria-label="Start focus session"
           >
-            {remainingMs < totalMs ? "Resume" : "▶ Start"}
+            <Play size={15} aria-hidden />
+            {remainingMs < totalMs ? "Resume" : "Start"}
           </button>
         ) : (
           <button
@@ -151,6 +159,7 @@ export default function FocusTimer() {
             className="btn-primary flex-1"
             aria-label="Pause focus session"
           >
+            <Pause size={15} aria-hidden />
             Pause
           </button>
         )}
@@ -160,6 +169,7 @@ export default function FocusTimer() {
           className="btn-ghost border border-line px-4 disabled:opacity-40"
           aria-label="Reset focus session"
         >
+          <RotateCcw size={15} aria-hidden />
           Reset
         </button>
       </div>

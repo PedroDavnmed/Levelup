@@ -158,14 +158,14 @@ export default function AuthForm({ mode }: { mode: Mode }) {
         {isSignup ? (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-brand-600">
+            <Link href="/login" className="font-medium text-brand-400">
               Sign in
             </Link>
           </>
         ) : (
           <>
             New here?{" "}
-            <Link href="/signup" className="font-medium text-brand-600">
+            <Link href="/signup" className="font-medium text-brand-400">
               Create an account
             </Link>
           </>

@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { StoreProvider } from "@/lib/store";
-import { ThemeProvider } from "@/components/ThemeProvider";
 import AppShell from "@/components/AppShell";
 
 const LOCAL_MODE = process.env.NEXT_PUBLIC_LOCAL_MODE === "true";
@@ -21,10 +20,8 @@ export default async function AppLayout({
   }
 
   return (
-    <ThemeProvider>
-      <StoreProvider>
-        <AppShell>{children}</AppShell>
-      </StoreProvider>
-    </ThemeProvider>
+    <StoreProvider>
+      <AppShell>{children}</AppShell>
+    </StoreProvider>
   );
 }

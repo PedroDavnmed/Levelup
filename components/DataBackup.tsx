@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Download, Upload } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { serializeBackup, parseBackup } from "@/lib/backup";
 import { todayStr } from "@/lib/date";
@@ -49,13 +50,13 @@ export default function DataBackup() {
         onClick={doExport}
         className="btn-ghost w-full justify-start text-xs"
       >
-        ⬇ Export data
+        <Download size={14} aria-hidden /> Export data
       </button>
       <button
         onClick={() => fileInput.current?.click()}
         className="btn-ghost w-full justify-start text-xs"
       >
-        ⬆ Import data
+        <Upload size={14} aria-hidden /> Import data
       </button>
       <input
         ref={fileInput}

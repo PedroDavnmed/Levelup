@@ -2,7 +2,7 @@ export default function ProgressRing({
   pct,
   size = 64,
   stroke = 7,
-  color = "#5b7cfa",
+  color = "#4D7CFF",
   children,
 }: {
   pct: number;

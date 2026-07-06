@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { X } from "lucide-react";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
@@ -74,24 +75,27 @@ export default function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm p-4">
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="card w-full max-w-md p-6"
+        className="card-raised w-full max-w-md p-6 animate-fadeIn"
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 id={titleId} className="text-lg font-semibold text-ink">
+          <h2
+            id={titleId}
+            className="font-display text-lg font-semibold tracking-tight text-ink"
+          >
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="text-muted hover:text-ink text-xl leading-none"
+            className="grid h-7 w-7 place-items-center rounded-lg text-muted transition hover:bg-surface hover:text-ink"
             aria-label="Close"
           >
-            ×
+            <X size={16} aria-hidden />
           </button>
         </div>
         {children}

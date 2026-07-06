@@ -14,7 +14,7 @@ export default function RangeToggle({
     <div
       role="group"
       aria-label="Time range"
-      className="inline-flex rounded-lg border border-line p-0.5"
+      className="inline-flex rounded-lg border border-line bg-surface-2 p-0.5"
     >
       {options.map((n) => (
         <button
@@ -22,9 +22,9 @@ export default function RangeToggle({
           type="button"
           onClick={() => onChange(n)}
           aria-pressed={value === n}
-          className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+          className={`rounded-md px-2.5 py-1 font-mono text-xs font-medium transition duration-150 ${
             value === n
-              ? "bg-brand-500 text-white"
+              ? "bg-brand-600 text-white"
               : "text-muted hover:text-ink"
           }`}
         >

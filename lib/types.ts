@@ -58,6 +58,9 @@ export interface StudyTask {
   /** Due date (YYYY-MM-DD). Absent on older tasks — fall back to createdAt's
    *  local date via `studyTaskDate()`. */
   date?: string;
+  /** Eisenhower importance axis. Urgency is derived from `date`, not stored.
+   *  Absent on older tasks — read as not-important. */
+  important?: boolean;
 }
 
 /** A completed focus (Pomodoro) session — timed work, optionally tied to a

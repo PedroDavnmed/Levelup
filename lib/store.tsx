@@ -117,12 +117,17 @@ interface StoreApi {
     }
   ) => void;
   toggleEventDone: (id: string) => void;
-  addStudyTask: (title: string, note?: string, date?: string) => void;
+  addStudyTask: (
+    title: string,
+    note?: string,
+    date?: string,
+    important?: boolean
+  ) => void;
   toggleStudyTaskDone: (id: string) => void;
   deleteStudyTask: (id: string) => void;
   updateStudyTask: (
     id: string,
-    patch: { title?: string; note?: string; date?: string }
+    patch: { title?: string; note?: string; date?: string; important?: boolean }
   ) => void;
   logFocusSession: (minutes: number, taskId?: string | null) => void;
   resetAll: () => void;
@@ -492,7 +497,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // --- Study tasks (one-off to-dos) -----------------------------------
 
   const addStudyTask = useCallback<StoreApi["addStudyTask"]>(
-    (title, note, date) => {
+    (title, note, date, important) => {
       mutate((prev) => ({
         ...prev,
         studyTasks: [
@@ -505,6 +510,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             createdAt: new Date().toISOString(),
             completedAt: null,
             date: date ?? todayStr(),
+            important,
           } satisfies StudyTask,
         ],
       }));

@@ -6,6 +6,7 @@ import {
   xpByDay,
   studyTaskDates,
   studyTaskDate,
+  taskQuadrant,
   studyTasksCompletedOn,
   focusMinutesByDay,
   totalFocusMinutes,
@@ -143,6 +144,26 @@ describe("study task aggregation", () => {
     };
     expect(studyTaskDate(withDate)).toBe("2026-06-05");
     expect(studyTaskDate(noDate)).toBe("2026-06-01");
+  });
+
+  it("taskQuadrant classifies by importance × urgency (urgent = due <= today)", () => {
+    const today = todayStr();
+    const past = "2026-01-01";
+    const future = "2999-01-01";
+    const mk = (important: boolean, date?: string): StudyTask => ({
+      id: "x", title: "T", done: false,
+      createdAt: "2026-06-01T12:00:00", completedAt: null, date, important,
+    });
+    // important × urgent
+    expect(taskQuadrant(mk(true, past), today)).toBe("do"); // overdue
+    expect(taskQuadrant(mk(true, today), today)).toBe("do"); // due today
+    expect(taskQuadrant(mk(true, future), today)).toBe("schedule"); // not urgent
+    // not important × urgent
+    expect(taskQuadrant(mk(false, past), today)).toBe("next");
+    expect(taskQuadrant(mk(false, future), today)).toBe("later");
+    // dateless task defaults to today via studyTaskDate → urgent
+    expect(taskQuadrant(mk(true), today)).toBe("do");
+    expect(taskQuadrant(mk(false), today)).toBe("next");
   });
 
   it("studyTasksCompletedOn returns done tasks finished on the given LOCAL day", () => {

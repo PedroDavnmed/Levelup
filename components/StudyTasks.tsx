@@ -9,8 +9,10 @@ import {
   studyTaskDates,
   studyTaskDate,
   studyTasksCompletedOn,
+  taskQuadrant,
   totalFocusMinutes,
 } from "@/lib/aggregate";
+import type { Quadrant } from "@/lib/aggregate";
 import { activeDaysConsistency, consistencyColor } from "@/lib/consistency";
 import { todayStr, addDays } from "@/lib/date";
 import { shortDate, prettyDate } from "@/lib/calendar";
@@ -31,6 +33,14 @@ function fmtMins(m: number): string {
   return h > 0 ? `${h}h ${min}m` : `${min}m`;
 }
 
+/** Eisenhower quadrants, in reading order, with their labels/accents. */
+const QUADRANTS: { key: Quadrant; label: string; accent: string }[] = [
+  { key: "do", label: "🔴 Do first", accent: "text-red-500" },
+  { key: "schedule", label: "🟡 Schedule", accent: "text-amber-500" },
+  { key: "next", label: "🔵 Do next", accent: "text-blue-500" },
+  { key: "later", label: "⚪ Later", accent: "text-muted" },
+];
+
 export default function StudyTasks() {
   const {
     state,
@@ -47,6 +57,8 @@ export default function StudyTasks() {
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(today);
+  const [important, setImportant] = useState(false);
+  const [view, setView] = useState<"list" | "matrix">("list");
   const [range, setRange] = useState(14);
   const [doneDay, setDoneDay] = useState(today); // which day's completions to show
 
@@ -63,6 +75,19 @@ export default function StudyTasks() {
     };
   }, [tasks, today]);
   const pendingCount = overdue.length + todayTasks.length + upcoming.length;
+  // Same pending set, grouped into Eisenhower quadrants for the matrix view.
+  const quadrants = useMemo(() => {
+    const groups: Record<Quadrant, StudyTask[]> = {
+      do: [],
+      schedule: [],
+      next: [],
+      later: [],
+    };
+    for (const t of tasks) {
+      if (!t.done) groups[taskQuadrant(t, today)].push(t);
+    }
+    return groups;
+  }, [tasks, today]);
   const done = useMemo(() => tasks.filter((t) => t.done), [tasks]);
   // Tasks completed on the selected day (newest first).
   const dayDone = useMemo(
@@ -88,9 +113,10 @@ export default function StudyTasks() {
         title: title.trim(),
         note: note.trim() || undefined,
         date,
+        important,
       });
     } else {
-      addStudyTask(title.trim(), note.trim() || undefined, date);
+      addStudyTask(title.trim(), note.trim() || undefined, date, important);
     }
     closeForm();
   }
@@ -100,6 +126,7 @@ export default function StudyTasks() {
     setTitle("");
     setNote("");
     setDate(today);
+    setImportant(false);
     setShowForm(true);
   }
 
@@ -108,6 +135,7 @@ export default function StudyTasks() {
     setTitle(t.title);
     setNote(t.note ?? "");
     setDate(studyTaskDate(t));
+    setImportant(t.important ?? false);
     setShowForm(true);
   }
 
@@ -117,6 +145,7 @@ export default function StudyTasks() {
     setTitle("");
     setNote("");
     setDate(today);
+    setImportant(false);
   }
 
   // One pending-task row (checkbox + title + due-date/note + edit/delete).
@@ -146,6 +175,17 @@ export default function StudyTasks() {
             </p>
           )}
         </div>
+        <button
+          onClick={() => updateStudyTask(t.id, { important: !t.important })}
+          className={`text-sm px-1 shrink-0 ${
+            t.important ? "text-amber-500" : "text-muted hover:text-amber-500"
+          }`}
+          aria-label={t.important ? "Unmark important" : "Mark important"}
+          aria-pressed={!!t.important}
+          title="Important"
+        >
+          {t.important ? "★" : "☆"}
+        </button>
         <button
           onClick={() => openEdit(t)}
           className="text-muted hover:text-ink text-sm px-1 shrink-0"
@@ -237,15 +277,52 @@ export default function StudyTasks() {
             <TrendChart data={chartData} type="bar" color="#5b7cfa" />
           </section>
 
-          {/* To do — grouped by due date */}
+          {/* To do — list (grouped by due date) or Eisenhower matrix */}
           <section className="card p-5">
-            <h2 className="font-semibold text-ink mb-3">
-              To do{pendingCount > 0 ? ` (${pendingCount})` : ""}
-            </h2>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="font-semibold text-ink">
+                To do{pendingCount > 0 ? ` (${pendingCount})` : ""}
+              </h2>
+              <div className="flex rounded-lg border border-line p-0.5 text-xs font-medium">
+                {(["list", "matrix"] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={`rounded-md px-2.5 py-1 capitalize transition ${
+                      view === v
+                        ? "bg-brand-500 text-white"
+                        : "text-muted hover:text-ink"
+                    }`}
+                    aria-pressed={view === v}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
             {pendingCount === 0 ? (
               <p className="text-sm text-muted">
                 All caught up — nothing left to do. 🎉
               </p>
+            ) : view === "matrix" ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {QUADRANTS.map((q) => (
+                  <div key={q.key} className="rounded-xl border border-line p-3">
+                    <p
+                      className={`mb-1 text-xs font-semibold uppercase tracking-wide ${q.accent}`}
+                    >
+                      {q.label} ({quadrants[q.key].length})
+                    </p>
+                    {quadrants[q.key].length === 0 ? (
+                      <p className="py-1 text-xs text-muted">Nothing here.</p>
+                    ) : (
+                      <ul className="divide-y divide-line">
+                        {quadrants[q.key].map(pendingRow)}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="space-y-4">
                 {overdue.length > 0 && (
@@ -412,6 +489,17 @@ export default function StudyTasks() {
               Shows on this day in your calendar. Defaults to today.
             </p>
           </div>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={important}
+              onChange={(e) => setImportant(e.target.checked)}
+            />
+            <span>Important</span>
+            <span className="text-xs text-muted">
+              — places it in the top row of the matrix
+            </span>
+          </label>
           {!editId && (
             <p className="text-xs text-muted">
               Completing a task earns +{XP_REWARDS.taskCompletion} XP.

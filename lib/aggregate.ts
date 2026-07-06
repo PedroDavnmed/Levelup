@@ -77,6 +77,15 @@ export function studyTaskDate(t: StudyTask): string {
   return t.date ?? localDateOf(t.createdAt);
 }
 
+/** Eisenhower quadrant of a pending task. Importance is the stored flag;
+ *  urgency is derived from the due date. */
+export type Quadrant = "do" | "schedule" | "next" | "later";
+export function taskQuadrant(t: StudyTask, today: string): Quadrant {
+  const urgent = studyTaskDate(t) <= today; // ponytail: tunable threshold
+  if (t.important) return urgent ? "do" : "schedule";
+  return urgent ? "next" : "later";
+}
+
 /** Study tasks completed on a given local day (YYYY-MM-DD). */
 export function studyTasksCompletedOn(
   tasks: StudyTask[],

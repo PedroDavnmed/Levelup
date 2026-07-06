@@ -1,5 +1,6 @@
 "use client";
 
+import { Lock, Trophy } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { rankForCount, RANKS } from "@/lib/ranks";
@@ -20,7 +21,7 @@ export default function AchievementsPage() {
     <div>
       <PageHeader
         title="Achievements"
-        icon="🏆"
+        icon={<Trophy size={22} aria-hidden />}
         subtitle={`${count} / ${ACHIEVEMENTS.length} unlocked`}
       />
 
@@ -53,25 +54,32 @@ export default function AchievementsPage() {
             }}
           />
         </div>
-        {/* Rank ladder */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {RANKS.map((r) => {
+        {/* Rank ladder — reached tiers hold their color; the current one glows */}
+        <div className="mt-4 flex flex-wrap items-center gap-y-2">
+          {RANKS.map((r, i) => {
             const reached = count >= r.minAchievements;
             const isCurrent = r.name === rankInfo.rank.name;
             return (
-              <span
-                key={r.name}
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium border ${
-                  isCurrent ? "border-transparent" : "border-line"
-                } ${reached ? "" : "opacity-40"}`}
-                style={
-                  isCurrent
-                    ? { backgroundColor: `${r.color}22`, color: r.color }
-                    : undefined
-                }
-                title={`${r.minAchievements}+ achievements`}
-              >
-                {r.icon} {r.name}
+              <span key={r.name} className="flex items-center">
+                {i > 0 && (
+                  <span
+                    aria-hidden
+                    className={`h-px w-3 ${reached ? "bg-line-bright" : "bg-line"}`}
+                  />
+                )}
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${
+                    isCurrent ? "border-transparent glow" : "border-line"
+                  } ${reached ? "" : "opacity-40"}`}
+                  style={
+                    reached
+                      ? { backgroundColor: `${r.color}22`, color: r.color }
+                      : undefined
+                  }
+                  title={`${r.minAchievements}+ achievements`}
+                >
+                  {r.icon} {r.name}
+                </span>
               </span>
             );
           })}
@@ -84,11 +92,24 @@ export default function AchievementsPage() {
           return (
             <div
               key={a.key}
-              className={`card p-4 text-center transition ${
-                isUnlocked ? "" : "opacity-50 grayscale"
+              className={`card p-4 text-center transition duration-150 hover:-translate-y-0.5 hover:border-line-bright ${
+                isUnlocked ? "" : "opacity-60"
               }`}
             >
-              <div className="text-4xl mb-2">{isUnlocked ? a.icon : "🔒"}</div>
+              {/* Badge tile — collectibles stay emoji, in a machined container */}
+              <div
+                className={`mx-auto mb-3 grid h-16 w-16 place-items-center rounded-2xl border text-3xl ${
+                  isUnlocked
+                    ? "border-brand-500/40 bg-brand-50 glow"
+                    : "border-line bg-surface-2 text-muted"
+                }`}
+              >
+                {isUnlocked ? (
+                  a.icon
+                ) : (
+                  <Lock size={22} aria-hidden />
+                )}
+              </div>
               <p className="text-sm font-semibold text-ink">{a.name}</p>
               <p className="mt-0.5 text-xs text-muted">{a.description}</p>
               {isUnlocked && (

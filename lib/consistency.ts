@@ -53,7 +53,7 @@ export function habitConsistency(
 
 /** A friendly colour for a consistency percentage. */
 export function consistencyColor(pct: number): string {
-  if (pct >= 80) return "#7fd1ae"; // mint
-  if (pct >= 50) return "#f6c66b"; // amber
-  return "#ffb59e"; // peach
+  if (pct >= 80) return "#3DD68C"; // mint
+  if (pct >= 50) return "#FFB454"; // amber
+  return "#FF8A7A"; // peach
 }

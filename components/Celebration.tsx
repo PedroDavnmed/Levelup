@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { isSoundEnabled, playChime } from "@/lib/sound";
 
-const COLORS = ["#5b7cfa", "#7fd1ae", "#f6c66b", "#ffb59e", "#c3b4f5"];
+const COLORS = ["#4D7CFF", "#3DD68C", "#FFB454", "#FF8A7A", "#8FA8FF"];
 
 // Fixed set of confetti pieces with randomized position/timing.
 const PIECES = Array.from({ length: 42 }, (_, i) => ({
@@ -72,7 +72,7 @@ export default function Celebration() {
           className="pointer-events-none fixed inset-0 z-[60] grid place-items-center"
           aria-hidden
         >
-          <div className="animate-fadeIn rounded-2xl bg-brand-500 px-8 py-5 text-center text-white shadow-soft">
+          <div className="animate-fadeIn rounded-2xl bg-brand-600 px-8 py-5 text-center text-white glow">
             <p className="text-3xl font-extrabold">🎉 {banner}!</p>
             <p className="text-sm opacity-90">You leveled up</p>
           </div>

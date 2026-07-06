@@ -12,7 +12,9 @@ export default function StatCard({
   return (
     <div className="card p-5">
       <p className="text-sm text-muted">{label}</p>
-      <p className={`mt-1 text-3xl font-bold ${accent}`}>{value}</p>
+      <p className={`mt-1 font-display text-3xl font-bold tracking-tight ${accent}`}>
+        {value}
+      </p>
       {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
     </div>
   );

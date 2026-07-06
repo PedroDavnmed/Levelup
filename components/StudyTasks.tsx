@@ -1,5 +1,6 @@
 "use client";
 
+import { BookOpen, Pencil, Star, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { XP_REWARDS } from "@/lib/types";
@@ -34,11 +35,16 @@ function fmtMins(m: number): string {
 }
 
 /** Eisenhower quadrants, in reading order, with their labels/accents. */
-const QUADRANTS: { key: Quadrant; label: string; accent: string }[] = [
-  { key: "do", label: "🔴 Do first", accent: "text-red-500" },
-  { key: "schedule", label: "🟡 Schedule", accent: "text-amber-500" },
-  { key: "next", label: "🔵 Do next", accent: "text-blue-500" },
-  { key: "later", label: "⚪ Later", accent: "text-muted" },
+const QUADRANTS: {
+  key: Quadrant;
+  label: string;
+  accent: string;
+  dot: string;
+}[] = [
+  { key: "do", label: "Do first", accent: "text-red-500", dot: "bg-red-500" },
+  { key: "schedule", label: "Schedule", accent: "text-amber", dot: "bg-amber" },
+  { key: "next", label: "Do next", accent: "text-brand-400", dot: "bg-brand-500" },
+  { key: "later", label: "Later", accent: "text-muted", dot: "bg-muted" },
 ];
 
 export default function StudyTasks() {
@@ -184,21 +190,25 @@ export default function StudyTasks() {
           aria-pressed={!!t.important}
           title="Important"
         >
-          {t.important ? "★" : "☆"}
+          <Star
+            size={15}
+            aria-hidden
+            fill={t.important ? "currentColor" : "none"}
+          />
         </button>
         <button
           onClick={() => openEdit(t)}
           className="text-muted hover:text-ink text-sm px-1 shrink-0"
           aria-label="Edit task"
         >
-          ✏️
+          <Pencil size={15} aria-hidden />
         </button>
         <button
           onClick={() => deleteStudyTask(t.id)}
           className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
           aria-label="Delete task"
         >
-          🗑
+          <Trash2 size={15} aria-hidden />
         </button>
       </li>
     );
@@ -210,7 +220,7 @@ export default function StudyTasks() {
     <div>
       <PageHeader
         title="Study"
-        icon="📚"
+        icon={<BookOpen size={22} aria-hidden />}
         subtitle={`${done.length} tasks completed`}
         action={
           <button onClick={openNew} className="btn-primary">
@@ -225,7 +235,7 @@ export default function StudyTasks() {
 
       {tasks.length === 0 ? (
         <EmptyState
-          icon="📚"
+          icon={<BookOpen size={22} aria-hidden />}
           title="No study tasks yet"
           hint='Add a task like "Read chapter 4" or "Practice problems", check it off when done, and earn XP.'
           action={
@@ -262,7 +272,7 @@ export default function StudyTasks() {
             <StatCard
               label="XP from study"
               value={earnedXp}
-              accent="text-brand-600"
+              accent="text-brand-400"
             />
           </section>
 
@@ -274,7 +284,7 @@ export default function StudyTasks() {
               </h2>
               <RangeToggle value={range} onChange={setRange} />
             </div>
-            <TrendChart data={chartData} type="bar" color="#5b7cfa" />
+            <TrendChart data={chartData} type="bar" color="#4D7CFF" />
           </section>
 
           {/* To do — list (grouped by due date) or Eisenhower matrix */}
@@ -309,8 +319,12 @@ export default function StudyTasks() {
                 {QUADRANTS.map((q) => (
                   <div key={q.key} className="rounded-xl border border-line p-3">
                     <p
-                      className={`mb-1 text-xs font-semibold uppercase tracking-wide ${q.accent}`}
+                      className={`mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide ${q.accent}`}
                     >
+                      <span
+                        aria-hidden
+                        className={`inline-block h-2 w-2 rounded-full ${q.dot}`}
+                      />
                       {q.label} ({quadrants[q.key].length})
                     </p>
                     {quadrants[q.key].length === 0 ? (
@@ -431,7 +445,7 @@ export default function StudyTasks() {
                         className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
                         aria-label="Delete task"
                       >
-                        🗑
+                        <Trash2 size={15} aria-hidden />
                       </button>
                     </li>
                   ))}

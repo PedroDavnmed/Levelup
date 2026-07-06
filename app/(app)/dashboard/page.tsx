@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Check, Rocket } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { levelProgress } from "@/lib/gamification";
 import { rankForCount } from "@/lib/ranks";
@@ -49,6 +50,17 @@ export default function DashboardPage() {
   const [showName, setShowName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
 
+  // One-shot shimmer sweep across the XP bar whenever XP goes up.
+  const [xpFlash, setXpFlash] = useState(0);
+  const prevXp = useRef<number | null>(null);
+  useEffect(() => {
+    if (!hydrated) return;
+    if (prevXp.current !== null && totalXp > prevXp.current) {
+      setXpFlash((n) => n + 1);
+    }
+    prevXp.current = totalXp;
+  }, [totalXp, hydrated]);
+
   function openNameEdit() {
     setNameDraft(displayName);
     setShowName(true);
@@ -74,11 +86,11 @@ export default function DashboardPage() {
       <header className="flex items-end justify-between">
         <div>
           <p className="text-sm text-muted">Welcome back,</p>
-          <h1 className="text-3xl font-bold text-ink">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-ink">
             {displayName} 👋{" "}
             <button
               onClick={openNameEdit}
-              className="text-xs font-normal text-brand-600 align-middle"
+              className="text-xs font-sans font-normal tracking-normal text-brand-400 align-middle"
             >
               edit
             </button>
@@ -86,69 +98,88 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Level hero */}
+      {/* Character panel — level + rank in one place */}
       <section className="card p-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-xl bg-brand-500 text-white text-xl font-bold">
-              {prog.level}
-            </span>
-            <div>
-              <p className="font-semibold text-ink">Level {prog.level}</p>
-              <p className="text-xs text-muted">{totalXp} total XP</p>
+        <div className="grid gap-6 sm:grid-cols-2">
+          {/* Level side */}
+          <div>
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+                  Level
+                </p>
+                <p className="font-display text-5xl font-bold tracking-tight text-ink leading-none">
+                  {prog.level}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-mono text-xs text-muted">
+                  {totalXp} XP total
+                </p>
+                <p className="font-mono text-xs text-brand-400">
+                  {prog.toNext} XP to LVL {prog.level + 1}
+                </p>
+              </div>
+            </div>
+            <div className="relative mt-3 h-3 rounded-full bg-bg overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-400 glow transition-all duration-700 ease-spring"
+                style={{ width: `${prog.pct}%` }}
+              />
+              {xpFlash > 0 && (
+                <span
+                  key={xpFlash}
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 w-1/3 bg-white/25 blur-sm animate-shimmer"
+                />
+              )}
             </div>
           </div>
-          <p className="text-sm text-muted">
-            {prog.toNext} XP to level {prog.level + 1}
-          </p>
-        </div>
-        <div className="h-3 rounded-full bg-bg overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-700"
-            style={{ width: `${prog.pct}%` }}
-          />
-        </div>
-      </section>
 
-      {/* Rank */}
-      <section className="card p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span
-              className="grid h-12 w-12 place-items-center rounded-xl text-2xl"
-              style={{ backgroundColor: `${rankInfo.rank.color}22` }}
-            >
-              {rankInfo.rank.icon}
-            </span>
-            <div>
-              <p className="font-semibold text-ink">
-                {rankInfo.rank.name} rank
-              </p>
-              <p className="text-xs text-muted">
-                {unlockedCount} / {ACHIEVEMENTS.length} achievements unlocked
+          {/* Rank side */}
+          <div className="sm:border-l sm:border-line sm:pl-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span
+                  className="grid h-12 w-12 place-items-center rounded-xl text-2xl"
+                  style={{ backgroundColor: `${rankInfo.rank.color}22` }}
+                >
+                  {rankInfo.rank.icon}
+                </span>
+                <div>
+                  <p
+                    className="font-display font-bold tracking-tight"
+                    style={{ color: rankInfo.rank.color }}
+                  >
+                    {rankInfo.rank.name}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {unlockedCount}/{ACHIEVEMENTS.length} achievements
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-muted text-right">
+                {rankInfo.next
+                  ? `${rankInfo.toNext} more to ${rankInfo.next.name}`
+                  : "Max rank reached 🎉"}
               </p>
             </div>
+            <div className="mt-4 h-2.5 rounded-full bg-bg overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${rankInfo.pct}%`,
+                  backgroundColor: rankInfo.rank.color,
+                }}
+              />
+            </div>
           </div>
-          <p className="text-sm text-muted text-right">
-            {rankInfo.next
-              ? `${rankInfo.toNext} more to ${rankInfo.next.name}`
-              : "Max rank reached 🎉"}
-          </p>
-        </div>
-        <div className="mt-3 h-2.5 rounded-full bg-bg overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{
-              width: `${rankInfo.pct}%`,
-              backgroundColor: rankInfo.rank.color,
-            }}
-          />
         </div>
       </section>
 
       {isEmpty && (
         <EmptyState
-          icon="🚀"
+          icon={<Rocket size={26} aria-hidden />}
           title="Let's get your stats moving"
           hint="Add a training or study activity, create a habit, or set a goal — every action earns XP and fills your charts."
           action={
@@ -169,7 +200,7 @@ export default function DashboardPage() {
 
       {/* Quick stats */}
       <section className="grid gap-4 grid-cols-2 sm:grid-cols-4">
-        <StatCard label="Total XP" value={totalXp} accent="text-brand-600" />
+        <StatCard label="Total XP" value={totalXp} accent="text-brand-400" />
         <StatCard label="Sessions (7d)" value={sessionsThisWeek} />
         <StatCard
           label="Habits today"
@@ -186,7 +217,7 @@ export default function DashboardPage() {
           </h2>
           <RangeToggle value={xpRange} onChange={setXpRange} />
         </div>
-        <TrendChart data={xpData} type="area" color="#5b7cfa" />
+        <TrendChart data={xpData} type="area" color="#4D7CFF" />
       </section>
 
       {/* Upcoming calendar entries */}
@@ -194,7 +225,7 @@ export default function DashboardPage() {
         <section className="card p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-ink">Upcoming</h2>
-            <Link href="/calendar" className="text-xs font-medium text-brand-600">
+            <Link href="/calendar" className="text-xs font-medium text-brand-400">
               Open calendar →
             </Link>
           </div>
@@ -206,9 +237,9 @@ export default function DashboardPage() {
                   style={{ backgroundColor: it.style.color }}
                 />
                 <span className="text-sm text-ink truncate flex-1">
-                  {it.style.icon} {it.title}
+                  {it.title}
                 </span>
-                <span className="text-xs text-muted shrink-0">
+                <span className="font-mono text-xs text-muted shrink-0">
                   {shortDate(it.date)}
                   {it.startTime ? ` · ${formatTime(it.startTime)}` : ""}
                 </span>
@@ -238,7 +269,7 @@ export default function DashboardPage() {
                     }`}
                     aria-label={done ? "Mark not done" : "Mark done"}
                   >
-                    {done ? "✓" : ""}
+                    {done ? <Check size={14} aria-hidden /> : null}
                   </button>
                   <span
                     className={`text-sm ${done ? "text-muted line-through" : "text-ink"}`}

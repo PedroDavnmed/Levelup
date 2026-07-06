@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 import { isSoundEnabled, setSoundEnabled } from "@/lib/sound";
 
 export default function SoundToggle() {
@@ -24,7 +25,8 @@ export default function SoundToggle() {
       aria-pressed={on}
       className="btn-ghost w-full justify-start text-xs"
     >
-      {on ? "🔊 Sound on" : "🔇 Sound off"}
+      {on ? <Volume2 size={14} aria-hidden /> : <VolumeX size={14} aria-hidden />}
+      {on ? "Sound on" : "Sound off"}
     </button>
   );
 }

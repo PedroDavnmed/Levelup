@@ -1,6 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-display",
+});
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["500"],
+  variable: "--font-mono",
+});
 
 export const metadata: Metadata = {
   title: "LevelUp — Gamified Life Tracker",
@@ -15,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#5b7cfa",
+  themeColor: "#070A12",
   width: "device-width",
   initialScale: 1,
 };
@@ -26,15 +42,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Apply saved/system theme before paint to avoid a flash. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('levelup:theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}`,
-          }}
-        />
-      </head>
+    <html
+      lang="en"
+      className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="font-sans min-h-screen">
         {children}
         <ServiceWorkerRegister />

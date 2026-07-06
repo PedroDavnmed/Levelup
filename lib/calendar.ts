@@ -8,9 +8,9 @@ export const EVENT_STYLE: Record<
   CalendarEvent["type"],
   { label: string; color: string; icon: string }
 > = {
-  task: { label: "Task", color: "#5b7cfa", icon: "📌" },
-  meeting: { label: "Meeting", color: "#c3b4f5", icon: "👥" },
-  event: { label: "Event", color: "#7fd1ae", icon: "📅" },
+  task: { label: "Task", color: "#4D7CFF", icon: "📌" },
+  meeting: { label: "Meeting", color: "#8FA8FF", icon: "👥" },
+  event: { label: "Event", color: "#3DD68C", icon: "📅" },
 };
 
 /** 42 dates (6 weeks) covering the month grid for the given year/month (0-11). */
@@ -126,8 +126,8 @@ export interface CalendarItem {
   href?: string; // goals link to their page instead of toggling
 }
 
-const STUDY_STYLE = { label: "Study", color: "#a78bfa", icon: "📚" };
-const GOAL_STYLE = { label: "Goal", color: "#f6c66b", icon: "🎯" };
+const STUDY_STYLE = { label: "Study", color: "#8FA8FF", icon: "📚" };
+const GOAL_STYLE = { label: "Goal", color: "#FFB454", icon: "🎯" };
 
 function eventItem(e: CalendarEvent): CalendarItem {
   return {

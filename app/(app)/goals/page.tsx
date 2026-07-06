@@ -1,5 +1,6 @@
 "use client";
 
+import { Pencil, Target, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { todayStr } from "@/lib/date";
@@ -81,7 +82,7 @@ export default function GoalsPage() {
     <div>
       <PageHeader
         title="Goals"
-        icon="🎯"
+        icon={<Target size={22} aria-hidden />}
         subtitle={`${active.length} active · ${done.length} completed`}
         action={
           <button onClick={openNew} className="btn-primary">
@@ -92,7 +93,7 @@ export default function GoalsPage() {
 
       {state.goals.length === 0 ? (
         <EmptyState
-          icon="🎯"
+          icon={<Target size={22} aria-hidden />}
           title="No goals yet"
           hint='Set a target like "Run 50 km this month" and watch the ring fill as you log progress.'
           action={
@@ -112,7 +113,7 @@ export default function GoalsPage() {
               <div key={g.id} className="card p-4 flex items-center gap-4">
                 <ProgressRing
                   pct={pct}
-                  color={g.status === "done" ? "#7fd1ae" : "#5b7cfa"}
+                  color={g.status === "done" ? "#3DD68C" : "#4D7CFF"}
                 >
                   {pct}%
                 </ProgressRing>
@@ -162,7 +163,7 @@ export default function GoalsPage() {
                         className="text-muted hover:text-ink text-sm px-1"
                         aria-label="Edit goal"
                       >
-                        ✏️
+                        <Pencil size={15} aria-hidden />
                       </button>
                     </>
                   )}
@@ -173,7 +174,7 @@ export default function GoalsPage() {
                     className="text-muted hover:text-red-500 text-sm px-1"
                     aria-label="Delete goal"
                   >
-                    🗑
+                    <Trash2 size={15} aria-hidden />
                   </button>
                 </div>
               </div>

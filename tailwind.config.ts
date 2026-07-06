@@ -1,7 +1,6 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: "class",
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,31 +8,30 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Semantic tokens — driven by CSS variables so they flip in dark mode.
+        // Semantic tokens — CSS-var driven (see globals.css). Dark-only.
         bg: "rgb(var(--c-bg) / <alpha-value>)",
         surface: "rgb(var(--c-surface) / <alpha-value>)",
+        "surface-2": "rgb(var(--c-surface-2) / <alpha-value>)",
         ink: "rgb(var(--c-ink) / <alpha-value>)",
         muted: "rgb(var(--c-muted) / <alpha-value>)",
         line: "rgb(var(--c-line) / <alpha-value>)",
+        "line-bright": "rgb(var(--c-line-bright) / <alpha-value>)",
         brand: {
           50: "rgb(var(--c-brand-50) / <alpha-value>)",
-          100: "#dbe6ff",
-          400: "#7b9cff",
-          500: "#5b7cfa",
-          600: "#4763e6",
+          100: "#16213D",
+          400: "#7AA5FF",
+          500: "#4D7CFF",
+          600: "#2E5BFF",
         },
-        // Fixed accents (read fine on light and dark surfaces).
-        mint: "#7fd1ae",
-        peach: "#ffb59e",
-        lilac: "#c3b4f5",
-        amber: "#f6c66b",
+        // Semantic accents, tuned for dark surfaces.
+        mint: "#3DD68C", // success
+        peach: "#FF8A7A", // soft danger
+        lilac: "#8FA8FF", // info
+        amber: "#FFB454", // warning / streak fire
       },
       borderRadius: {
         xl: "1rem",
         "2xl": "1.25rem",
-      },
-      boxShadow: {
-        soft: "0 1px 2px rgba(16,24,40,0.04), 0 8px 24px rgba(16,24,40,0.06)",
       },
       keyframes: {
         fadeIn: {
@@ -47,13 +45,30 @@ const config: Config = {
             opacity: "0",
           },
         },
+        // One-shot highlight sweep across a progress bar on XP gain.
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(300%)" },
+        },
+        // Ambient breathing glow — earned only while the focus timer runs.
+        breathe: {
+          "0%, 100%": { boxShadow: "0 0 12px rgba(77,124,255,0.15)" },
+          "50%": { boxShadow: "0 0 32px rgba(77,124,255,0.35)" },
+        },
       },
       animation: {
         fadeIn: "fadeIn 0.2s ease-out",
         confettiFall: "confetti 1.4s ease-in forwards",
+        shimmer: "shimmer 0.9s cubic-bezier(0.22,1,0.36,1)",
+        breathe: "breathe 2.5s ease-in-out infinite",
+      },
+      transitionTimingFunction: {
+        spring: "cubic-bezier(0.22, 1, 0.36, 1)",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-sans)", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
     },
   },

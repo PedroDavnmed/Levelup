@@ -9,6 +9,7 @@ import { ACHIEVEMENTS } from "@/lib/achievements";
 import {
   activeDaysConsistency,
   habitConsistency,
+  taskConsistency,
   consistencyColor,
 } from "@/lib/consistency";
 import { studyTaskDates } from "@/lib/aggregate";
@@ -16,7 +17,7 @@ import { allCalendarItems } from "@/lib/calendar";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import ProgressRing from "@/components/ProgressRing";
-import { localDateOf } from "@/lib/date";
+import { localDateOf, todayStr } from "@/lib/date";
 import Loading from "@/components/Loading";
 
 function ConsistencyCard({
@@ -67,7 +68,7 @@ export default function StatsPage() {
         trainLogs.map((l) => localDateOf(l.loggedAt)),
         30
       ),
-      studyConsistency: activeDaysConsistency(studyDates, 30),
+      studyConsistency: taskConsistency(state.studyTasks, todayStr(), 30),
       habitConsistency: habitConsistency(state.habits, state.completions, 30),
       completions: state.completions.length,
       longestStreak: state.habits.reduce(

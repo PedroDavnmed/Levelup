@@ -1,5 +1,6 @@
-import type { Habit, HabitCompletion } from "./types";
+import type { Habit, HabitCompletion, StudyTask } from "./types";
 import { todayStr, dayDiff, addDays, localDateOf, isScheduled } from "./date";
+import { studyTaskDate } from "./aggregate";
 
 /**
  * "Show-up" consistency for activity trackers (training / study):
@@ -49,6 +50,31 @@ export function habitConsistency(
     }
   }
   return expected > 0 ? Math.round((completed / expected) * 100) : 0;
+}
+
+/**
+ * Deadline consistency for one-off study tasks: of the tasks that have come due
+ * within the last `n` days, the share completed. A task counts against you only
+ * once it's overdue and still undone — idle days and future/not-yet-due tasks
+ * never lower it. A late completion still counts as done. Returns 100 when
+ * nothing has come due yet (a clean record).
+ */
+export function taskConsistency(
+  tasks: StudyTask[],
+  today: string,
+  n = 30
+): number {
+  const windowStart = addDays(today, -(n - 1));
+  let done = 0;
+  let missed = 0;
+  for (const t of tasks) {
+    const due = studyTaskDate(t);
+    if (due < windowStart || due > today) continue; // outside window / not yet due
+    if (t.done) done++;
+    else if (due < today) missed++; // overdue and still open (due today = neutral)
+  }
+  const total = done + missed;
+  return total === 0 ? 100 : Math.round((done / total) * 100);
 }
 
 /** A friendly colour for a consistency percentage. */

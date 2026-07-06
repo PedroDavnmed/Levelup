@@ -14,7 +14,7 @@ import {
   totalFocusMinutes,
 } from "@/lib/aggregate";
 import type { Quadrant } from "@/lib/aggregate";
-import { activeDaysConsistency, consistencyColor } from "@/lib/consistency";
+import { taskConsistency, consistencyColor } from "@/lib/consistency";
 import { todayStr, addDays } from "@/lib/date";
 import { shortDate, prettyDate } from "@/lib/calendar";
 import PageHeader from "@/components/PageHeader";
@@ -106,7 +106,7 @@ export default function StudyTasks() {
 
   const completedDates = useMemo(() => studyTaskDates(tasks), [tasks]);
   const chartData = countDatesByDay(completedDates, range);
-  const consistency = activeDaysConsistency(completedDates, range);
+  const consistency = taskConsistency(tasks, today, range);
   const earnedXp = done.length * XP_REWARDS.taskCompletion;
   const dayXp = dayDone.length * XP_REWARDS.taskCompletion;
   const focusMins = totalFocusMinutes(state.focusSessions, range);
@@ -259,7 +259,7 @@ export default function StudyTasks() {
               <div>
                 <p className="text-sm font-medium text-ink">Consistency</p>
                 <p className="text-xs text-muted">
-                  days active over the last {range}
+                  tasks done on time · last {range} days
                 </p>
               </div>
             </div>

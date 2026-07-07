@@ -252,12 +252,12 @@ export default function StudyTasks() {
               <ProgressRing
                 pct={consistency}
                 size={72}
-                color={consistencyColor(consistency)}
+                color={consistency === null ? "#3A4760" : consistencyColor(consistency)}
               >
-                {consistency}%
+                {consistency === null ? "—" : `${consistency}%`}
               </ProgressRing>
               <div>
-                <p className="text-sm font-medium text-ink">Consistency</p>
+                <p className="text-sm font-medium text-ink">On time</p>
                 <p className="text-xs text-muted">
                   tasks done on time · last {range} days
                 </p>

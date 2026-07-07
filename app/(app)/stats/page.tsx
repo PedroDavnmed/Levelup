@@ -22,17 +22,26 @@ import Loading from "@/components/Loading";
 
 function ConsistencyCard({
   label,
+  sub,
   pct,
 }: {
   label: string;
-  pct: number;
+  sub: string;
+  pct: number | null;
 }) {
   return (
     <div className="card p-5 flex flex-col items-center text-center gap-2">
-      <ProgressRing pct={pct} size={84} color={consistencyColor(pct)}>
-        {pct}%
+      <ProgressRing
+        pct={pct}
+        size={84}
+        color={pct === null ? "#3A4760" : consistencyColor(pct)}
+      >
+        {pct === null ? "—" : `${pct}%`}
       </ProgressRing>
-      <p className="text-sm font-medium text-ink">{label}</p>
+      <div>
+        <p className="text-sm font-medium text-ink">{label}</p>
+        <p className="text-xs text-muted">{sub}</p>
+      </div>
     </div>
   );
 }
@@ -102,9 +111,9 @@ export default function StatsPage() {
 
       {/* Consistency overview */}
       <section className="grid gap-4 grid-cols-3 mb-6">
-        <ConsistencyCard label="Training" pct={m.trainConsistency} />
-        <ConsistencyCard label="Study" pct={m.studyConsistency} />
-        <ConsistencyCard label="Habits" pct={m.habitConsistency} />
+        <ConsistencyCard label="Training" sub="showed up" pct={m.trainConsistency} />
+        <ConsistencyCard label="Study" sub="on time" pct={m.studyConsistency} />
+        <ConsistencyCard label="Habits" sub="kept the plan" pct={m.habitConsistency} />
       </section>
 
       {/* Progression */}

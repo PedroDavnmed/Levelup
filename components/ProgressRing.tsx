@@ -5,13 +5,14 @@ export default function ProgressRing({
   color = "#4D7CFF",
   children,
 }: {
-  pct: number;
+  /** 0–100, or null for "nothing to measure" (renders an empty track). */
+  pct: number | null;
   size?: number;
   stroke?: number;
   color?: string;
   children?: React.ReactNode;
 }) {
-  const clamped = Math.max(0, Math.min(100, pct));
+  const clamped = pct === null ? 0 : Math.max(0, Math.min(100, pct));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const offset = c - (clamped / 100) * c;

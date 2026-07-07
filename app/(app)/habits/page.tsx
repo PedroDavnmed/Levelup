@@ -128,12 +128,12 @@ export default function HabitsPage() {
             <ProgressRing
               pct={consistency}
               size={80}
-              color={consistencyColor(consistency)}
+              color={consistency === null ? "#3A4760" : consistencyColor(consistency)}
             >
-              {consistency}%
+              {consistency === null ? "—" : `${consistency}%`}
             </ProgressRing>
             <div>
-              <p className="font-medium text-ink">Daily consistency</p>
+              <p className="font-medium text-ink">Kept the plan</p>
               <p className="text-xs text-muted">
                 share of habit-days completed over the last {range} days — skip a
                 planned day and it drops

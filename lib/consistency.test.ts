@@ -21,8 +21,8 @@ function task(p: Partial<StudyTask> & { id: string }): StudyTask {
 }
 
 describe("activeDaysConsistency", () => {
-  it("is 0 with no logs", () => {
-    expect(activeDaysConsistency([], 30)).toBe(0);
+  it("is null with no logs (nothing to measure)", () => {
+    expect(activeDaysConsistency([], 30)).toBeNull();
   });
 
   it("measures active days from the first log to today", () => {
@@ -38,8 +38,8 @@ describe("activeDaysConsistency", () => {
 });
 
 describe("habitConsistency", () => {
-  it("is 0 with no habits", () => {
-    expect(habitConsistency([], [], 30)).toBe(0);
+  it("is null with no habits (nothing to measure)", () => {
+    expect(habitConsistency([], [], 30)).toBeNull();
   });
 
   it("counts completed days out of days the habit has existed", () => {
@@ -60,8 +60,8 @@ describe("habitConsistency", () => {
 });
 
 describe("taskConsistency", () => {
-  it("is 100 with no tasks (nothing missed)", () => {
-    expect(taskConsistency([], today, 30)).toBe(100);
+  it("is null with no tasks (nothing has come due)", () => {
+    expect(taskConsistency([], today, 30)).toBeNull();
   });
 
   it("does not drop on idle days — the reported bug", () => {
@@ -94,13 +94,13 @@ describe("taskConsistency", () => {
       task({ id: "future", date: addDays(today, 5), done: false }), // not yet due
       task({ id: "todayOpen", date: today, done: false }), // day isn't over
     ];
-    expect(taskConsistency(tasks, today, 30)).toBe(100); // nothing has come due
+    expect(taskConsistency(tasks, today, 30)).toBeNull(); // nothing has come due
   });
 
   it("ignores tasks whose due date is outside the window", () => {
     const tasks = [
       task({ id: "old", date: addDays(today, -40), done: false }), // overdue but > 30d ago
     ];
-    expect(taskConsistency(tasks, today, 30)).toBe(100);
+    expect(taskConsistency(tasks, today, 30)).toBeNull();
   });
 });

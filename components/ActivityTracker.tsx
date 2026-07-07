@@ -173,12 +173,12 @@ export default function ActivityTracker({
               <ProgressRing
                 pct={consistency}
                 size={72}
-                color={consistencyColor(consistency)}
+                color={consistency === null ? "#3A4760" : consistencyColor(consistency)}
               >
-                {consistency}%
+                {consistency === null ? "—" : `${consistency}%`}
               </ProgressRing>
               <div>
-                <p className="text-sm font-medium text-ink">Consistency</p>
+                <p className="text-sm font-medium text-ink">Showed up</p>
                 <p className="text-xs text-muted">
                   days active over the last {range}
                 </p>

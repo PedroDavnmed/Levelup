@@ -75,7 +75,14 @@ export default function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm p-4">
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm p-4"
+      // Click the backdrop (but not the panel) to close. Deletes are now
+      // undoable, so an accidental dismissal only loses unsaved form input.
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div
         ref={panelRef}
         role="dialog"

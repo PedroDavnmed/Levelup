@@ -64,7 +64,8 @@ export default function CalendarPage() {
     if (ev) openEdit(ev);
   }
   function deleteItem(item: CalendarItem) {
-    if (item.source === "event") deleteEvent(item.id);
+    if (item.source !== "event") return;
+    if (confirm(`Delete "${item.title}" from the calendar?`)) deleteEvent(item.id);
   }
 
   const today = todayStr();
@@ -83,6 +84,7 @@ export default function CalendarPage() {
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [notes, setNotes] = useState("");
+  const [timeError, setTimeError] = useState<string | null>(null);
 
   const grid = useMemo(
     () => monthGrid(cursor.year, cursor.month),
@@ -98,6 +100,7 @@ export default function CalendarPage() {
     setStartTime("09:00");
     setEndTime("10:00");
     setNotes("");
+    setTimeError(null);
     setShowAdd(true);
   }
 
@@ -110,6 +113,7 @@ export default function CalendarPage() {
     setStartTime(ev.startTime ?? "09:00");
     setEndTime(ev.endTime ?? "10:00");
     setNotes(ev.notes ?? "");
+    setTimeError(null);
     setShowAdd(true);
   }
 
@@ -123,11 +127,16 @@ export default function CalendarPage() {
     setAllDay(false);
     setStartTime(time);
     setEndTime(plusOneHour(time));
+    setTimeError(null);
   }
 
   function submitAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
+    if (!allDay && endTime && endTime <= startTime) {
+      setTimeError("End time must be after the start time.");
+      return;
+    }
     const fields = {
       title: title.trim(),
       type,
@@ -281,17 +290,32 @@ export default function CalendarPage() {
                   <TimeSelect
                     id="ev-start"
                     value={startTime}
-                    onChange={setStartTime}
+                    onChange={(v) => {
+                      setStartTime(v);
+                      setTimeError(null);
+                    }}
                   />
                 </div>
                 <div>
                   <label className="label" htmlFor="ev-end">End</label>
-                  <TimeSelect id="ev-end" value={endTime} onChange={setEndTime} />
+                  <TimeSelect
+                    id="ev-end"
+                    value={endTime}
+                    onChange={(v) => {
+                      setEndTime(v);
+                      setTimeError(null);
+                    }}
+                  />
                 </div>
               </div>
               <p className="text-xs text-muted">
                 {formatTime(startTime)} – {formatTime(endTime)}
               </p>
+              {timeError && (
+                <p className="text-xs text-red-500" role="alert">
+                  {timeError}
+                </p>
+              )}
               <div className="flex flex-wrap gap-1.5">
                 {TIME_PRESETS.map((p) => (
                   <button

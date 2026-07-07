@@ -79,7 +79,9 @@ export default function DashboardPage() {
   const isEmpty =
     state.activities.length === 0 &&
     state.habits.length === 0 &&
-    state.goals.length === 0;
+    state.goals.length === 0 &&
+    state.studyTasks.length === 0 &&
+    state.events.length === 0;
 
   return (
     <div className="space-y-6">

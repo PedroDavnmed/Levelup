@@ -148,11 +148,6 @@ export default function StatsPage() {
         Calendar
       </h2>
       <section className="grid gap-4 grid-cols-2 sm:grid-cols-4">
-        <StatCard
-          label="Tasks done"
-          value={`${m.tasksDone}/${m.tasksTotal}`}
-          accent="text-brand-400"
-        />
         <StatCard label="Meetings" value={m.meetings} />
         <StatCard label="Events" value={m.eventsKind} />
         <StatCard label="Goal deadlines" value={m.goalDeadlines} />

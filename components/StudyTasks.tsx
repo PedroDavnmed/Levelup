@@ -204,7 +204,9 @@ export default function StudyTasks() {
           <Pencil size={15} aria-hidden />
         </button>
         <button
-          onClick={() => deleteStudyTask(t.id)}
+          onClick={() => {
+            if (confirm(`Delete task "${t.title}"?`)) deleteStudyTask(t.id);
+          }}
           className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
           aria-label="Delete task"
         >
@@ -401,8 +403,11 @@ export default function StudyTasks() {
                   aria-label="Completed day"
                 />
                 <button
-                  onClick={() => setDoneDay((d) => addDays(d, 1))}
-                  className="btn-ghost border border-line px-2.5 py-1"
+                  onClick={() =>
+                    setDoneDay((d) => (addDays(d, 1) > today ? d : addDays(d, 1)))
+                  }
+                  disabled={doneDay >= today}
+                  className="btn-ghost border border-line px-2.5 py-1 disabled:opacity-40"
                   aria-label="Next day"
                 >
                   ›
@@ -441,7 +446,10 @@ export default function StudyTasks() {
                         )}
                       </div>
                       <button
-                        onClick={() => deleteStudyTask(t.id)}
+                        onClick={() => {
+                          if (confirm(`Delete task "${t.title}"?`))
+                            deleteStudyTask(t.id);
+                        }}
                         className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
                         aria-label="Delete task"
                       >

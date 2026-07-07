@@ -455,6 +455,11 @@ function MonthView({
               key={d}
               onClick={() => onPick(d)}
               onDoubleClick={() => onQuickAdd(d)}
+              aria-label={`${prettyDate(d)}${
+                dayItems.length
+                  ? `, ${dayItems.length} item${dayItems.length === 1 ? "" : "s"}`
+                  : ", nothing scheduled"
+              }`}
               className={`min-h-[78px] rounded-lg border p-1.5 text-left align-top transition hover:border-brand-400 ${
                 isToday(d) ? "border-brand-500" : "border-line"
               } ${inMonth ? "bg-surface" : "bg-bg opacity-60"}`}
@@ -657,14 +662,14 @@ function ItemRow({
         <>
           <button
             onClick={() => onEdit(item)}
-            className="text-muted hover:text-ink text-sm px-1 shrink-0"
+            className="grid h-10 w-10 place-items-center shrink-0 text-muted hover:text-ink"
             aria-label="Edit entry"
           >
             <Pencil size={15} aria-hidden />
           </button>
           <button
             onClick={() => onDelete(item)}
-            className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
+            className="grid h-10 w-10 place-items-center shrink-0 text-muted hover:text-red-500"
             aria-label="Delete entry"
           >
             <Trash2 size={15} aria-hidden />

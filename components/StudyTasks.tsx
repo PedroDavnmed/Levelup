@@ -183,7 +183,7 @@ export default function StudyTasks() {
         </div>
         <button
           onClick={() => updateStudyTask(t.id, { important: !t.important })}
-          className={`text-sm px-1 shrink-0 ${
+          className={`grid h-10 w-10 place-items-center shrink-0 ${
             t.important ? "text-amber-500" : "text-muted hover:text-amber-500"
           }`}
           aria-label={t.important ? "Unmark important" : "Mark important"}
@@ -198,14 +198,14 @@ export default function StudyTasks() {
         </button>
         <button
           onClick={() => openEdit(t)}
-          className="text-muted hover:text-ink text-sm px-1 shrink-0"
+          className="grid h-10 w-10 place-items-center shrink-0 text-muted hover:text-ink"
           aria-label="Edit task"
         >
           <Pencil size={15} aria-hidden />
         </button>
         <button
           onClick={() => deleteStudyTask(t.id)}
-          className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
+          className="grid h-10 w-10 place-items-center shrink-0 text-muted hover:text-red-500"
           aria-label="Delete task"
         >
           <Trash2 size={15} aria-hidden />

@@ -160,7 +160,7 @@ export default function GoalsPage() {
                       </button>
                       <button
                         onClick={() => openEdit(g)}
-                        className="text-muted hover:text-ink text-sm px-1"
+                        className="grid h-10 w-10 place-items-center text-muted hover:text-ink"
                         aria-label="Edit goal"
                       >
                         <Pencil size={15} aria-hidden />
@@ -169,7 +169,7 @@ export default function GoalsPage() {
                   )}
                   <button
                     onClick={() => deleteGoal(g.id)}
-                    className="text-muted hover:text-red-500 text-sm px-1"
+                    className="grid h-10 w-10 place-items-center text-muted hover:text-red-500"
                     aria-label="Delete goal"
                   >
                     <Trash2 size={15} aria-hidden />

@@ -178,14 +178,14 @@ export default function HabitsPage() {
                   </div>
                   <button
                     onClick={() => openEdit(h)}
-                    className="text-muted hover:text-ink text-sm px-1 shrink-0"
+                    className="grid h-10 w-10 place-items-center shrink-0 text-muted hover:text-ink"
                     aria-label="Edit habit"
                   >
                     <Pencil size={15} aria-hidden />
                   </button>
                   <button
                     onClick={() => deleteHabit(h.id)}
-                    className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
+                    className="grid h-10 w-10 place-items-center shrink-0 text-muted hover:text-red-500"
                     aria-label="Delete habit"
                   >
                     <Trash2 size={15} aria-hidden />

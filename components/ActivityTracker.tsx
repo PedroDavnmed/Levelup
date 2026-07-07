@@ -242,14 +242,14 @@ export default function ActivityTracker({
                     </button>
                     <button
                       onClick={() => openEdit(a)}
-                      className="text-muted hover:text-ink text-sm px-1"
+                      className="grid h-10 w-10 place-items-center text-muted hover:text-ink"
                       aria-label="Edit activity"
                     >
                       <Pencil size={15} aria-hidden />
                     </button>
                     <button
                       onClick={() => deleteActivity(a.id)}
-                      className="text-muted hover:text-red-500 text-sm px-1"
+                      className="grid h-10 w-10 place-items-center text-muted hover:text-red-500"
                       aria-label="Delete activity"
                     >
                       <Trash2 size={15} aria-hidden />

@@ -44,6 +44,10 @@ export interface Goal {
   deadline: string | null; // YYYY-MM-DD
   status: "active" | "done";
   createdAt: string;
+  /** ISO timestamp, set once when the goal completes (completion is terminal).
+   *  Absent on goals finished before this field existed — those still count in
+   *  totals but can't be day-bucketed in the XP chart. */
+  completedAt?: string | null;
 }
 
 /** A one-off study to-do: created, completed once (awards XP), then kept in a
@@ -86,6 +90,10 @@ export interface CalendarEvent {
   notes?: string;
   done: boolean; // mainly meaningful for tasks
   createdAt: string;
+  /** ISO timestamp of the latest done-toggle; cleared when un-done. Drives XP
+   *  day-bucketing for completed tasks. Absent on events toggled before this
+   *  field existed. */
+  doneAt?: string | null;
 }
 
 export interface UnlockedAchievement {

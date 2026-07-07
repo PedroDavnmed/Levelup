@@ -14,7 +14,9 @@ import {
 import { todayStr } from "./date";
 import type {
   ActivityLog,
+  CalendarEvent,
   FocusSession,
+  Goal,
   HabitCompletion,
   StudyTask,
 } from "./types";
@@ -89,10 +91,63 @@ describe("aggregate bucketing", () => {
         completedAt: isoAtLocal(0, 11),
       },
     ];
-    const points = xpByDay(logs, comps, tasks, 7);
+    const points = xpByDay(logs, comps, tasks, [], [], 7);
     expect(points[points.length - 1].value).toBe(
       20 + XP_REWARDS.habitCompletion + XP_REWARDS.taskCompletion
     );
+  });
+
+  it("xpByDay buckets goal and calendar-task XP by their completion day", () => {
+    const goal: Goal = {
+      id: "g1",
+      title: "Run 50km",
+      targetValue: 50,
+      currentValue: 50,
+      deadline: null,
+      status: "done",
+      createdAt: isoAtLocal(10, 8),
+      completedAt: isoAtLocal(0, 12),
+    };
+    const taskEvent: CalendarEvent = {
+      id: "e1",
+      title: "File taxes",
+      type: "task",
+      date: todayStr(),
+      startTime: null,
+      endTime: null,
+      done: true,
+      createdAt: isoAtLocal(3, 8),
+      doneAt: isoAtLocal(1, 15), // completed yesterday
+    };
+    const points = xpByDay([], [], [], [goal], [taskEvent], 7);
+    expect(points[points.length - 1].value).toBe(XP_REWARDS.goalCompletion);
+    expect(points[points.length - 2].value).toBe(XP_REWARDS.taskCompletion);
+  });
+
+  it("xpByDay skips legacy done goals/events without completion timestamps", () => {
+    const goal: Goal = {
+      id: "g2",
+      title: "Legacy goal",
+      targetValue: 10,
+      currentValue: 10,
+      deadline: null,
+      status: "done",
+      createdAt: isoAtLocal(10, 8),
+      // no completedAt — finished before the field existed
+    };
+    const meeting: CalendarEvent = {
+      id: "e2",
+      title: "Standup",
+      type: "meeting", // meetings never grant XP even when done
+      date: todayStr(),
+      startTime: "09:00",
+      endTime: "09:30",
+      done: true,
+      createdAt: isoAtLocal(1, 8),
+      doneAt: isoAtLocal(0, 10),
+    };
+    const points = xpByDay([], [], [], [goal], [meeting], 7);
+    expect(points.every((p) => p.value === 0)).toBe(true);
   });
 });
 

@@ -1,6 +1,8 @@
 import type {
   ActivityLog,
+  CalendarEvent,
   FocusSession,
+  Goal,
   HabitCompletion,
   StudyTask,
 } from "./types";
@@ -125,30 +127,36 @@ export function totalFocusMinutes(
   );
 }
 
-/** Combined XP earned per day (activity logs + habit completions + completed
- *  study tasks). Focus sessions grant no XP, so they don't appear here. */
+/** Combined XP earned per day: activity logs, habit completions, completed
+ *  study tasks, completed goals, and completed calendar tasks — every XP
+ *  source, so the chart always reconciles with the profile total. Focus
+ *  sessions grant no XP, so they don't appear here. Goals/events completed
+ *  before their completion timestamps existed can't be day-bucketed and are
+ *  skipped (they still count toward totalXp). */
 export function xpByDay(
   logs: ActivityLog[],
   completions: HabitCompletion[],
   studyTasks: StudyTask[],
+  goals: Goal[],
+  events: CalendarEvent[],
   n: number
 ): ChartPoint[] {
   const dates = lastNDates(n);
   const totals = new Map(dates.map((d) => [d, 0]));
-  for (const log of logs) {
-    const d = dateOf(log.loggedAt);
-    if (totals.has(d)) totals.set(d, totals.get(d)! + log.xpAwarded);
+  const add = (d: string, xp: number) => {
+    if (totals.has(d)) totals.set(d, totals.get(d)! + xp);
+  };
+  for (const log of logs) add(dateOf(log.loggedAt), log.xpAwarded);
+  for (const c of completions) add(c.completedOn, XP_REWARDS.habitCompletion);
+  for (const d of studyTaskDates(studyTasks))
+    add(d, XP_REWARDS.taskCompletion);
+  for (const g of goals) {
+    if (g.status === "done" && g.completedAt)
+      add(dateOf(g.completedAt), XP_REWARDS.goalCompletion);
   }
-  for (const c of completions) {
-    if (totals.has(c.completedOn))
-      totals.set(
-        c.completedOn,
-        totals.get(c.completedOn)! + XP_REWARDS.habitCompletion
-      );
-  }
-  for (const d of studyTaskDates(studyTasks)) {
-    if (totals.has(d))
-      totals.set(d, totals.get(d)! + XP_REWARDS.taskCompletion);
+  for (const e of events) {
+    if (e.type === "task" && e.done && e.doneAt)
+      add(dateOf(e.doneAt), XP_REWARDS.taskCompletion);
   }
   return dates.map((d) => ({ label: shortLabel(d), value: totals.get(d)! }));
 }

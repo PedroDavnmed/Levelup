@@ -515,7 +515,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const next: AppState = {
         ...prev,
         events: prev.events.map((e) =>
-          e.id === id ? { ...e, done: nowDone } : e
+          e.id === id
+            ? {
+                ...e,
+                done: nowDone,
+                doneAt: nowDone ? new Date().toISOString() : null,
+              }
+            : e
         ),
         profile: {
           ...prev.profile,
@@ -861,6 +867,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
                 ...g,
                 currentValue: newValue,
                 status: justDone ? "done" : "active",
+                ...(justDone ? { completedAt: new Date().toISOString() } : {}),
               }
             : g
         ),

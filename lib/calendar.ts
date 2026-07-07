@@ -243,3 +243,29 @@ export function upcomingItems(
   );
   return items.slice(0, limit);
 }
+
+/** Overdue, not-yet-done items strictly before today (for the dashboard):
+ *  past-due events, study tasks, and active goal deadlines, most overdue
+ *  first. The mirror image of `upcomingItems`. */
+export function overdueItems(
+  state: AppState,
+  today: string,
+  limit: number
+): CalendarItem[] {
+  const items: CalendarItem[] = [];
+  for (const e of state.events)
+    if (e.date < today && !e.done) items.push(eventItem(e));
+  for (const t of state.studyTasks) {
+    const d = studyTaskDate(t);
+    if (d < today && !t.done) items.push(studyItem(t, d));
+  }
+  for (const g of state.goals)
+    if (g.deadline && g.deadline < today && g.status === "active")
+      items.push(goalItem(g));
+  items.sort(
+    (a, b) =>
+      a.date.localeCompare(b.date) ||
+      (a.startTime ?? "").localeCompare(b.startTime ?? "")
+  );
+  return items.slice(0, limit);
+}

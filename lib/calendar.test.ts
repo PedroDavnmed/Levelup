@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   calendarItemsForDate,
   upcomingItems,
+  overdueItems,
   allCalendarItems,
 } from "./calendar";
 import type { AppState, CalendarEvent, Goal, StudyTask } from "./types";
@@ -108,6 +109,38 @@ describe("upcomingItems", () => {
 
     const items = upcomingItems(s, D, 5);
     expect(items.map((i) => i.id)).toEqual(["st", "soon", "g1"]);
+  });
+});
+
+describe("overdueItems", () => {
+  it("returns only not-done items strictly before today, most overdue first", () => {
+    const s = baseState();
+    s.events.push(
+      event({ id: "old", date: "2026-06-08" }), // overdue
+      event({ id: "recent", date: "2026-06-09" }), // overdue
+      event({ id: "done", date: "2026-06-08", done: true }), // excluded (done)
+      event({ id: "today", date: D }), // excluded (not past)
+      event({ id: "future", date: "2026-06-12" }) // excluded (future)
+    );
+    s.studyTasks.push(studyTask({ id: "st", date: "2026-06-07" }));
+    s.goals.push(
+      goal({ id: "gover", deadline: "2026-06-05" }),
+      goal({ id: "gdone", deadline: "2026-06-05", status: "done" }) // excluded
+    );
+
+    const items = overdueItems(s, D, 10);
+    // ascending date = most overdue first: gover(05) st(07) old(08) recent(09)
+    expect(items.map((i) => i.id)).toEqual(["gover", "st", "old", "recent"]);
+  });
+
+  it("respects the limit", () => {
+    const s = baseState();
+    s.events.push(
+      event({ id: "a", date: "2026-06-01" }),
+      event({ id: "b", date: "2026-06-02" }),
+      event({ id: "c", date: "2026-06-03" })
+    );
+    expect(overdueItems(s, D, 2).map((i) => i.id)).toEqual(["a", "b"]);
   });
 });
 

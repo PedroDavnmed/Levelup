@@ -8,7 +8,7 @@ import { rankForCount } from "@/lib/ranks";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { isScheduled, todayStr, localDateOf } from "@/lib/date";
 import { xpByDay, lastNDates } from "@/lib/aggregate";
-import { upcomingItems, formatTime, shortDate } from "@/lib/calendar";
+import { upcomingItems, overdueItems, formatTime, shortDate } from "@/lib/calendar";
 import StatCard from "@/components/StatCard";
 import TrendChart from "@/components/TrendChart";
 import RangeToggle from "@/components/RangeToggle";
@@ -55,6 +55,10 @@ export default function DashboardPage() {
 
   const upcoming = useMemo(
     () => upcomingItems(state, today, 5),
+    [state, today]
+  );
+  const overdue = useMemo(
+    () => overdueItems(state, today, 5),
     [state, today]
   );
 
@@ -236,6 +240,33 @@ export default function DashboardPage() {
         </div>
         <TrendChart data={xpData} type="area" color="#4D7CFF" />
       </section>
+
+      {/* Overdue — past-due, still-open items need attention first */}
+      {overdue.length > 0 && (
+        <section className="card p-5 border-red-500/30">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-red-500">Overdue</h2>
+            <Link href="/calendar" className="text-xs font-medium text-brand-400">
+              Open calendar →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {overdue.map((it) => (
+              <li key={it.key} className="flex items-center gap-3">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
+                />
+                <span className="text-sm text-ink truncate flex-1">
+                  {it.title}
+                </span>
+                <span className="font-mono text-xs text-red-500 shrink-0">
+                  {shortDate(it.date)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Upcoming calendar entries */}
       {upcoming.length > 0 && (

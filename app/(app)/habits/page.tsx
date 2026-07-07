@@ -184,10 +184,7 @@ export default function HabitsPage() {
                     <Pencil size={15} aria-hidden />
                   </button>
                   <button
-                    onClick={() => {
-                      if (confirm(`Delete habit "${h.title}"?`))
-                        deleteHabit(h.id);
-                    }}
+                    onClick={() => deleteHabit(h.id)}
                     className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
                     aria-label="Delete habit"
                   >

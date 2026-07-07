@@ -64,8 +64,7 @@ export default function CalendarPage() {
     if (ev) openEdit(ev);
   }
   function deleteItem(item: CalendarItem) {
-    if (item.source !== "event") return;
-    if (confirm(`Delete "${item.title}" from the calendar?`)) deleteEvent(item.id);
+    if (item.source === "event") deleteEvent(item.id);
   }
 
   const today = todayStr();

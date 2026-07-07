@@ -248,10 +248,7 @@ export default function ActivityTracker({
                       <Pencil size={15} aria-hidden />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm(`Delete "${a.title}" and its logs?`))
-                          deleteActivity(a.id);
-                      }}
+                      onClick={() => deleteActivity(a.id)}
                       className="text-muted hover:text-red-500 text-sm px-1"
                       aria-label="Delete activity"
                     >

@@ -168,9 +168,7 @@ export default function GoalsPage() {
                     </>
                   )}
                   <button
-                    onClick={() => {
-                      if (confirm(`Delete goal "${g.title}"?`)) deleteGoal(g.id);
-                    }}
+                    onClick={() => deleteGoal(g.id)}
                     className="text-muted hover:text-red-500 text-sm px-1"
                     aria-label="Delete goal"
                   >

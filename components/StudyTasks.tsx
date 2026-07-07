@@ -204,9 +204,7 @@ export default function StudyTasks() {
           <Pencil size={15} aria-hidden />
         </button>
         <button
-          onClick={() => {
-            if (confirm(`Delete task "${t.title}"?`)) deleteStudyTask(t.id);
-          }}
+          onClick={() => deleteStudyTask(t.id)}
           className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
           aria-label="Delete task"
         >
@@ -446,10 +444,7 @@ export default function StudyTasks() {
                         )}
                       </div>
                       <button
-                        onClick={() => {
-                          if (confirm(`Delete task "${t.title}"?`))
-                            deleteStudyTask(t.id);
-                        }}
+                        onClick={() => deleteStudyTask(t.id)}
                         className="text-muted hover:text-red-500 text-sm px-1 shrink-0"
                         aria-label="Delete task"
                       >

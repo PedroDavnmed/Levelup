@@ -66,10 +66,13 @@ const EMPTY_STATE: AppState = {
 
 export interface Toast {
   id: string;
-  kind: "level" | "badge" | "xp" | "rank";
+  kind: "level" | "badge" | "xp" | "rank" | "info";
   title: string;
   detail?: string;
   icon: string;
+  /** Optional inline action (e.g. Undo a delete). Clicking it runs `onAct`
+   *  and dismisses the toast. */
+  action?: { label: string; onAct: () => void };
 }
 
 /** A "big moment" signal the <Celebration> component reacts to (confetti/sound).
@@ -333,13 +336,51 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [mutate]
   );
 
-  const deleteActivity = useCallback((id: string) => {
-    setState((s) => ({
-      ...s,
-      activities: s.activities.filter((a) => a.id !== id),
-      logs: s.logs.filter((l) => l.activityId !== id),
-    }));
-  }, []);
+  // Soft delete: remove now (UI updates immediately) but offer a 4.5s Undo.
+  // Restore uses setState directly — not commit — so it never re-fires XP or
+  // achievement side-effects. If the toast expires, the delete is permanent.
+  const softDelete = useCallback(
+    (opts: {
+      icon: string;
+      name: string;
+      remove: (s: AppState) => AppState;
+      restore: (s: AppState) => AppState;
+    }) => {
+      setState(opts.remove);
+      pushToast({
+        kind: "info",
+        icon: opts.icon,
+        title: "Deleted",
+        detail: opts.name,
+        action: { label: "Undo", onAct: () => setState(opts.restore) },
+      });
+    },
+    [pushToast]
+  );
+
+  const deleteActivity = useCallback(
+    (id: string) => {
+      const s = stateRef.current;
+      const activity = s.activities.find((a) => a.id === id);
+      if (!activity) return;
+      const logs = s.logs.filter((l) => l.activityId === id);
+      softDelete({
+        icon: "🗑️",
+        name: activity.title,
+        remove: (st) => ({
+          ...st,
+          activities: st.activities.filter((a) => a.id !== id),
+          logs: st.logs.filter((l) => l.activityId !== id),
+        }),
+        restore: (st) => ({
+          ...st,
+          activities: [...st.activities, activity],
+          logs: [...st.logs, ...logs],
+        }),
+      });
+    },
+    [softDelete]
+  );
 
   // Edits update user-entered fields only — no XP awarded (that stays with
   // logActivity). Past logs keep the xp they were awarded at log time.
@@ -376,13 +417,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [mutate]
   );
 
-  const deleteHabit = useCallback((id: string) => {
-    setState((s) => ({
-      ...s,
-      habits: s.habits.filter((h) => h.id !== id),
-      completions: s.completions.filter((c) => c.habitId !== id),
-    }));
-  }, []);
+  const deleteHabit = useCallback(
+    (id: string) => {
+      const s = stateRef.current;
+      const habit = s.habits.find((h) => h.id === id);
+      if (!habit) return;
+      const completions = s.completions.filter((c) => c.habitId === id);
+      softDelete({
+        icon: "🗑️",
+        name: habit.title,
+        remove: (st) => ({
+          ...st,
+          habits: st.habits.filter((h) => h.id !== id),
+          completions: st.completions.filter((c) => c.habitId !== id),
+        }),
+        restore: (st) => ({
+          ...st,
+          habits: [...st.habits, habit],
+          completions: [...st.completions, ...completions],
+        }),
+      });
+    },
+    [softDelete]
+  );
 
   const updateHabit = useCallback<StoreApi["updateHabit"]>(
     (id, patch) => {
@@ -438,9 +495,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [mutate]
   );
 
-  const deleteGoal = useCallback((id: string) => {
-    setState((s) => ({ ...s, goals: s.goals.filter((g) => g.id !== id) }));
-  }, []);
+  const deleteGoal = useCallback(
+    (id: string) => {
+      const goal = stateRef.current.goals.find((g) => g.id === id);
+      if (!goal) return;
+      softDelete({
+        icon: "🗑️",
+        name: goal.title,
+        remove: (st) => ({ ...st, goals: st.goals.filter((g) => g.id !== id) }),
+        restore: (st) => ({ ...st, goals: [...st.goals, goal] }),
+      });
+    },
+    [softDelete]
+  );
 
   // Edit goal fields only. We deliberately don't flip status or award XP here:
   // lowering a target below current progress just shows 100% (the ring clamps),
@@ -482,9 +549,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [mutate]
   );
 
-  const deleteEvent = useCallback((id: string) => {
-    setState((s) => ({ ...s, events: s.events.filter((e) => e.id !== id) }));
-  }, []);
+  const deleteEvent = useCallback(
+    (id: string) => {
+      const event = stateRef.current.events.find((e) => e.id === id);
+      if (!event) return;
+      softDelete({
+        icon: "🗑️",
+        name: event.title,
+        remove: (st) => ({
+          ...st,
+          events: st.events.filter((e) => e.id !== id),
+        }),
+        restore: (st) => ({ ...st, events: [...st.events, event] }),
+      });
+    },
+    [softDelete]
+  );
 
   const updateEvent = useCallback<StoreApi["updateEvent"]>(
     (id, patch) => {
@@ -587,12 +667,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [commit]
   );
 
-  const deleteStudyTask = useCallback((id: string) => {
-    setState((s) => ({
-      ...s,
-      studyTasks: s.studyTasks.filter((t) => t.id !== id),
-    }));
-  }, []);
+  const deleteStudyTask = useCallback(
+    (id: string) => {
+      const task = stateRef.current.studyTasks.find((t) => t.id === id);
+      if (!task) return;
+      softDelete({
+        icon: "🗑️",
+        name: task.title,
+        remove: (st) => ({
+          ...st,
+          studyTasks: st.studyTasks.filter((t) => t.id !== id),
+        }),
+        restore: (st) => ({ ...st, studyTasks: [...st.studyTasks, task] }),
+      });
+    },
+    [softDelete]
+  );
 
   const updateStudyTask = useCallback<StoreApi["updateStudyTask"]>(
     (id, patch) => {

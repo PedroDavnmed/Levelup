@@ -106,4 +106,43 @@ describe("evaluateNewAchievements", () => {
     } as CalendarEvent);
     expect(evaluateNewAchievements(s)).toContain("all_rounder");
   });
+
+  it("task_25 counts study and calendar tasks together; first_task stays calendar-only", () => {
+    const s = emptyState();
+    // 20 completed study tasks + 5 completed calendar tasks = 25 unified.
+    for (let i = 0; i < 20; i++) {
+      s.studyTasks.push({
+        id: `st${i}`,
+        title: `Task ${i}`,
+        done: true,
+        createdAt: "2026-06-01T00:00:00Z",
+        completedAt: "2026-06-01T10:00:00Z",
+      });
+    }
+    for (let i = 0; i < 5; i++) {
+      s.events.push({
+        id: `e${i}`,
+        title: `Cal ${i}`,
+        type: "task",
+        date: "2026-06-01",
+        startTime: null,
+        endTime: null,
+        done: true,
+        createdAt: "2026-06-01T00:00:00Z",
+      } as CalendarEvent);
+    }
+    expect(evaluateNewAchievements(s)).toContain("task_25");
+  });
+
+  it("first_task does not unlock from study tasks alone", () => {
+    const s = emptyState();
+    s.studyTasks.push({
+      id: "st1",
+      title: "Read",
+      done: true,
+      createdAt: "2026-06-01T00:00:00Z",
+      completedAt: "2026-06-01T10:00:00Z",
+    });
+    expect(evaluateNewAchievements(s)).not.toContain("first_task");
+  });
 });

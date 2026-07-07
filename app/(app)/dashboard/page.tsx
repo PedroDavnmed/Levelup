@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { levelProgress } from "@/lib/gamification";
 import { rankForCount } from "@/lib/ranks";
 import { ACHIEVEMENTS } from "@/lib/achievements";
-import { todayStr, localDateOf } from "@/lib/date";
+import { isScheduled, todayStr, localDateOf } from "@/lib/date";
 import { xpByDay, lastNDates } from "@/lib/aggregate";
 import { upcomingItems, formatTime, shortDate } from "@/lib/calendar";
 import StatCard from "@/components/StatCard";
@@ -27,9 +27,18 @@ export default function DashboardPage() {
     () => state.logs.filter((l) => weekDates.has(localDateOf(l.loggedAt))).length,
     [state.logs, weekDates]
   );
-  const habitsDoneToday = state.completions.filter(
-    (c) => c.completedOn === today
-  ).length;
+  // Only habits scheduled today count toward "Habits today" (a Mon/Wed/Fri
+  // habit shouldn't read as missed on a Tuesday).
+  const scheduledToday = useMemo(
+    () => state.habits.filter((h) => isScheduled(today, h.days)),
+    [state.habits, today]
+  );
+  const habitsDoneToday = useMemo(() => {
+    const ids = new Set(scheduledToday.map((h) => h.id));
+    return state.completions.filter(
+      (c) => c.completedOn === today && ids.has(c.habitId)
+    ).length;
+  }, [state.completions, scheduledToday, today]);
   const activeGoals = state.goals.filter((g) => g.status === "active").length;
   const [xpRange, setXpRange] = useState(14);
   const xpData = xpByDay(
@@ -208,7 +217,11 @@ export default function DashboardPage() {
         <StatCard label="Sessions (7d)" value={sessionsThisWeek} />
         <StatCard
           label="Habits today"
-          value={`${habitsDoneToday}/${state.habits.length}`}
+          value={
+            scheduledToday.length > 0
+              ? `${habitsDoneToday}/${scheduledToday.length}`
+              : "—"
+          }
         />
         <StatCard label="Active goals" value={activeGoals} />
       </section>
@@ -257,8 +270,13 @@ export default function DashboardPage() {
       {state.habits.length > 0 && (
         <section className="card p-5">
           <h2 className="font-semibold text-ink mb-3">Today&apos;s habits</h2>
+          {scheduledToday.length === 0 && (
+            <p className="text-sm text-muted">
+              No habits scheduled today — rest day.
+            </p>
+          )}
           <ul className="space-y-2">
-            {state.habits.map((h) => {
+            {scheduledToday.map((h) => {
               const done = state.completions.some(
                 (c) => c.habitId === h.id && c.completedOn === today
               );

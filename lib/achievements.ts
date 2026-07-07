@@ -23,7 +23,10 @@ interface Metrics {
   xp: number;
   hasTraining: boolean;
   hasStudy: boolean;
+  /** Study tasks + calendar tasks completed (matches the Stats page). */
   tasksDone: number;
+  /** Calendar tasks only — for the badges that explicitly say "calendar". */
+  calTasksDone: number;
   eventsCount: number;
   habitsCreated: number;
   focusSessions: number;
@@ -40,9 +43,12 @@ function metricsOf(s: AppState): Metrics {
     if (trainIds.has(l.activityId)) trainingLogs++;
   }
   const studyTasksDone = s.studyTasks.filter((t) => t.done).length;
-  const tasksDone = s.events.filter(
+  const calTasksDone = s.events.filter(
     (e) => e.type === "task" && e.done
   ).length;
+  // "Tasks" achievements count study + calendar tasks, matching the unified
+  // "Tasks done" stat the app shows everywhere else.
+  const tasksDone = studyTasksDone + calTasksDone;
   const completions = s.completions.length;
   const goalsDone = s.goals.filter((g) => g.status === "done").length;
   return {
@@ -58,6 +64,7 @@ function metricsOf(s: AppState): Metrics {
     hasTraining: trainIds.size > 0,
     hasStudy: s.studyTasks.length > 0,
     tasksDone,
+    calTasksDone,
     eventsCount: s.events.length,
     habitsCreated: s.habits.length,
     focusSessions: s.focusSessions.length,
@@ -67,7 +74,7 @@ function metricsOf(s: AppState): Metrics {
       studyTasksDone > 0 &&
       completions > 0 &&
       goalsDone > 0 &&
-      tasksDone > 0,
+      calTasksDone > 0,
   };
 }
 
@@ -104,13 +111,13 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "xp_10000", name: "Legend", description: "Earn 10,000 total XP.", icon: "🚀", earned: (m) => m.xp >= 10000 },
 
   // Calendar & cross-cutting achievements
-  { key: "first_task", name: "Checklist", description: "Complete your first calendar task.", icon: "✔️", earned: (m) => m.tasksDone >= 1 },
+  { key: "first_task", name: "Checklist", description: "Complete your first calendar task.", icon: "✔️", earned: (m) => m.calTasksDone >= 1 },
   { key: "planner", name: "Planner", description: "Add 10 calendar entries.", icon: "📆", earned: (m) => m.eventsCount >= 10 },
-  { key: "task_25", name: "Taskmaster", description: "Complete 25 tasks.", icon: "🗒️", earned: (m) => m.tasksDone >= 25 },
+  { key: "task_25", name: "Taskmaster", description: "Complete 25 tasks (study or calendar).", icon: "🗒️", earned: (m) => m.tasksDone >= 25 },
   { key: "organizer", name: "Organizer", description: "Add 50 calendar entries.", icon: "🗂️", earned: (m) => m.eventsCount >= 50 },
   { key: "habit_builder", name: "Habit Builder", description: "Create 5 habits.", icon: "🧱", earned: (m) => m.habitsCreated >= 5 },
   { key: "goals_10", name: "Visionary", description: "Complete 10 custom goals.", icon: "🌠", earned: (m) => m.goalsDone >= 10 },
-  { key: "task_100", name: "Productivity Machine", description: "Complete 100 tasks.", icon: "⚙️", earned: (m) => m.tasksDone >= 100 },
+  { key: "task_100", name: "Productivity Machine", description: "Complete 100 tasks (study or calendar).", icon: "⚙️", earned: (m) => m.tasksDone >= 100 },
   { key: "all_rounder", name: "All-Rounder", description: "Log training, complete a study task, a habit, a goal, and a calendar task.", icon: "🌈", earned: (m) => m.allRounder },
   { key: "level_30", name: "Ascendant", description: "Reach level 30.", icon: "🔱", earned: (m) => m.level >= 30 },
   { key: "xp_25000", name: "Mythic Grind", description: "Earn 25,000 total XP.", icon: "🌌", earned: (m) => m.xp >= 25000 },

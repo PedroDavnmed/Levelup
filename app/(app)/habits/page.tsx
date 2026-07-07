@@ -3,7 +3,7 @@
 import { Flame, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { todayStr } from "@/lib/date";
+import { isScheduled, todayStr } from "@/lib/date";
 import { liveScheduledStreak } from "@/lib/streaks";
 import { completionsByDay } from "@/lib/aggregate";
 import { habitConsistency, consistencyColor } from "@/lib/consistency";
@@ -35,10 +35,19 @@ export default function HabitsPage() {
   const [range, setRange] = useState(14);
 
   const today = todayStr();
-  const doneTodayCount = useMemo(
-    () => state.completions.filter((c) => c.completedOn === today).length,
-    [state.completions, today]
-  );
+  // "Done today" only counts habits actually scheduled today — a Mon/Wed/Fri
+  // habit must not read as "missed" on a Tuesday.
+  const { doneTodayCount, scheduledTodayCount } = useMemo(() => {
+    const scheduledIds = new Set(
+      state.habits.filter((h) => isScheduled(today, h.days)).map((h) => h.id)
+    );
+    return {
+      scheduledTodayCount: scheduledIds.size,
+      doneTodayCount: state.completions.filter(
+        (c) => c.completedOn === today && scheduledIds.has(c.habitId)
+      ).length,
+    };
+  }, [state.habits, state.completions, today]);
   const chartData = completionsByDay(state.completions, range);
   const consistency = habitConsistency(state.habits, state.completions, range);
 
@@ -90,7 +99,11 @@ export default function HabitsPage() {
       <PageHeader
         title="Habits"
         icon={<Flame size={22} aria-hidden />}
-        subtitle={`${doneTodayCount}/${state.habits.length} done today`}
+        subtitle={
+          scheduledTodayCount > 0
+            ? `${doneTodayCount}/${scheduledTodayCount} done today`
+            : "no habits scheduled today"
+        }
         action={
           <button onClick={openNew} className="btn-primary">
             + New
@@ -158,6 +171,9 @@ export default function HabitsPage() {
                     <p className="text-xs text-muted">
                       🔥 {streak} day streak · best {h.longestStreak}
                       {sched ? ` · ${sched}` : ""}
+                      {!isScheduled(today, h.days)
+                        ? " · not scheduled today"
+                        : ""}
                     </p>
                   </div>
                   <button

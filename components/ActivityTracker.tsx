@@ -362,6 +362,7 @@ export default function ActivityTracker({
               type="number"
               step="any"
               min={0}
+              required
               className="input"
               value={value}
               onChange={(e) => setValue(e.target.value)}

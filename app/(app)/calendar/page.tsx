@@ -266,6 +266,7 @@ export default function CalendarPage() {
               <input
                 id="ev-date"
                 type="date"
+                required
                 className="input"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}

@@ -6,6 +6,7 @@ import {
   addDays,
   dayOfWeek,
   isScheduled,
+  normalizeDay,
 } from "./date";
 
 describe("todayStr", () => {
@@ -42,6 +43,19 @@ describe("dayOfWeek / isScheduled", () => {
     expect(isScheduled("2026-06-01", mwf)).toBe(true); // Mon
     expect(isScheduled("2026-06-02", mwf)).toBe(false); // Tue
     expect(isScheduled("2026-06-03", mwf)).toBe(true); // Wed
+  });
+});
+
+describe("normalizeDay", () => {
+  it("passes a real date through unchanged", () => {
+    expect(normalizeDay("2026-06-09")).toBe("2026-06-09");
+  });
+  it("falls back to today for empty string, null, and undefined", () => {
+    // A cleared <input type=date> yields "" — that must never be stored.
+    const today = todayStr();
+    expect(normalizeDay("")).toBe(today);
+    expect(normalizeDay(null)).toBe(today);
+    expect(normalizeDay(undefined)).toBe(today);
   });
 });
 

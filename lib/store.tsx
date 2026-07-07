@@ -23,7 +23,7 @@ import { levelForXp } from "./gamification";
 import { evaluateNewAchievements, ACHIEVEMENTS } from "./achievements";
 import { rankForCount } from "./ranks";
 import { scheduledStreakStats } from "./streaks";
-import { todayStr } from "./date";
+import { normalizeDay, todayStr } from "./date";
 
 const STORAGE_KEY = "levelup:v1";
 
@@ -388,6 +388,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addGoal = useCallback<StoreApi["addGoal"]>(
     (title, targetValue, deadline) => {
+      if (!Number.isFinite(targetValue) || targetValue <= 0) return;
       mutate((prev) => ({
         ...prev,
         goals: [
@@ -416,7 +417,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // and completion XP stays tied to addGoalProgress.
   const updateGoal = useCallback<StoreApi["updateGoal"]>(
     (id, patch) => {
-      if (patch.targetValue <= 0) return; // guard, mirrors addGoal
+      if (!Number.isFinite(patch.targetValue) || patch.targetValue <= 0)
+        return; // guard, mirrors addGoal
       mutate((prev) => ({
         ...prev,
         goals: prev.goals.map((g) =>
@@ -437,7 +439,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             id: genId(),
             title: input.title,
             type: input.type,
-            date: input.date,
+            date: normalizeDay(input.date),
             startTime: input.startTime,
             endTime: input.endTime,
             notes: input.notes,
@@ -456,10 +458,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const updateEvent = useCallback<StoreApi["updateEvent"]>(
     (id, patch) => {
+      const clean = { ...patch, date: normalizeDay(patch.date) };
       mutate((prev) => ({
         ...prev,
         events: prev.events.map((e) =>
-          e.id === id ? { ...e, ...patch } : e
+          e.id === id ? { ...e, ...clean } : e
         ),
       }));
     },
@@ -509,7 +512,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             done: false,
             createdAt: new Date().toISOString(),
             completedAt: null,
-            date: date ?? todayStr(),
+            date: normalizeDay(date),
             important,
           } satisfies StudyTask,
         ],
@@ -557,10 +560,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const updateStudyTask = useCallback<StoreApi["updateStudyTask"]>(
     (id, patch) => {
+      const clean =
+        patch.date !== undefined
+          ? { ...patch, date: normalizeDay(patch.date) }
+          : patch;
       mutate((prev) => ({
         ...prev,
         studyTasks: prev.studyTasks.map((t) =>
-          t.id === id ? { ...t, ...patch } : t
+          t.id === id ? { ...t, ...clean } : t
         ),
       }));
     },
@@ -583,6 +590,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const logActivity = useCallback<StoreApi["logActivity"]>(
     (activityId, value, note) => {
+      // Reject empty/absurd amounts: a 0-value log would still pay XP, and a
+      // non-finite value corrupts persisted state (Infinity → null via JSON).
+      if (!Number.isFinite(value) || value <= 0) return;
       const prev = stateRef.current;
       const activity = prev.activities.find((a) => a.id === activityId);
       if (!activity) return;
@@ -690,6 +700,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addGoalProgress = useCallback<StoreApi["addGoalProgress"]>(
     (goalId, delta) => {
+      if (!Number.isFinite(delta) || delta === 0) return;
       const prev = stateRef.current;
       const goal = prev.goals.find((g) => g.id === goalId);
       if (!goal || goal.status === "done") return;

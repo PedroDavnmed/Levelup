@@ -209,6 +209,7 @@ export default function GoalsPage() {
                 type="number"
                 step="any"
                 min={0}
+                required
                 className="input"
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}

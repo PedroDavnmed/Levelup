@@ -503,6 +503,7 @@ export default function StudyTasks() {
             <input
               id="task-date"
               type="date"
+              required
               className="input"
               value={date}
               onChange={(e) => setDate(e.target.value)}

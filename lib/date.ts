@@ -12,6 +12,13 @@ export function localDateOf(iso: string): string {
   return todayStr(new Date(iso));
 }
 
+/** Coerce a possibly-empty date field to a real YYYY-MM-DD (defaults to today).
+ *  Guards the store against `""` from cleared date inputs, which would
+ *  otherwise persist and render as "Invalid Date". */
+export function normalizeDay(s?: string | null): string {
+  return s || todayStr();
+}
+
 /** Whole-day difference (b - a) between two YYYY-MM-DD strings. */
 export function dayDiff(a: string, b: string): number {
   const da = new Date(a + "T00:00:00");

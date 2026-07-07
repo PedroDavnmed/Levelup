@@ -1,9 +1,11 @@
 "use client";
 
-import { Zap } from "lucide-react";
+import { Timer, Zap } from "lucide-react";
+import Link from "next/link";
 import { useStore } from "@/lib/store";
 import { levelProgress } from "@/lib/gamification";
 import { rankForCount } from "@/lib/ranks";
+import { fmtClock, useNow } from "@/components/FocusTimer";
 import NavLinks from "@/components/NavLinks";
 import Toasts from "@/components/Toasts";
 import Celebration from "@/components/Celebration";
@@ -59,6 +61,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
+        <RunningFocusPill />
+
         <NavLinks />
 
         <div className="mt-auto hidden sm:flex flex-col gap-1 border-t border-line pt-3">
@@ -81,5 +85,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Toasts />
       <Celebration />
     </div>
+  );
+}
+
+/** Sidebar indicator for a running focus session — the visible proof that the
+ *  timer survives leaving the Study page. Links back to it. */
+function RunningFocusPill() {
+  const { focus } = useStore();
+  const now = useNow(focus.running, 1000);
+  if (!focus.running || focus.endAt === null) return null;
+  return (
+    <Link
+      href="/study"
+      className="flex items-center gap-2 rounded-xl border border-brand-500/50 bg-brand-50 px-3 py-2 text-sm font-medium text-brand-400 animate-breathe"
+      aria-label="Focus session running — open Study"
+    >
+      <Timer size={15} aria-hidden />
+      <span className="font-mono tabular-nums">
+        {fmtClock(Math.max(0, focus.endAt - now))}
+      </span>
+      <span className="text-xs text-muted">focusing</span>
+    </Link>
   );
 }

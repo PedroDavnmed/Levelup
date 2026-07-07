@@ -24,8 +24,32 @@ import { evaluateNewAchievements, ACHIEVEMENTS } from "./achievements";
 import { rankForCount } from "./ranks";
 import { scheduledStreakStats } from "./streaks";
 import { normalizeDay, todayStr } from "./date";
+import { isSoundEnabled, playChime } from "./sound";
 
 const STORAGE_KEY = "levelup:v1";
+const FOCUS_KEY = "levelup:focus";
+
+export const MAX_FOCUS_MINUTES = 180;
+
+/** The focus (Pomodoro) timer. Lives beside AppState — not inside it — so a
+ *  ticking clock never enters backups/exports, but survives navigation and
+ *  reloads via its own localStorage key. `endAt` is the single source of truth
+ *  while running; components derive the countdown from it locally. */
+export interface FocusState {
+  minutes: number; // chosen session length
+  taskId: string | null; // optional linked study task
+  running: boolean;
+  endAt: number | null; // epoch ms; set only while running
+  remainingMs: number; // authoritative while paused / at rest
+}
+
+const DEFAULT_FOCUS: FocusState = {
+  minutes: 25,
+  taskId: null,
+  running: false,
+  endAt: null,
+  remainingMs: 25 * 60_000,
+};
 
 const EMPTY_STATE: AppState = {
   profile: { displayName: "Player", totalXp: 0 },
@@ -130,6 +154,12 @@ interface StoreApi {
     patch: { title?: string; note?: string; date?: string; important?: boolean }
   ) => void;
   logFocusSession: (minutes: number, taskId?: string | null) => void;
+  focus: FocusState;
+  startFocus: () => void;
+  pauseFocus: () => void;
+  resetFocus: () => void;
+  setFocusMinutes: (m: number) => void;
+  setFocusTask: (id: string | null) => void;
   resetAll: () => void;
   importData: (next: AppState) => void;
   celebration: Celebration | null;
@@ -644,6 +674,121 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [commit]
   );
 
+  // --- Focus timer (lives beside AppState; survives navigation/reload) --
+
+  const [focus, setFocus] = useState<FocusState>(DEFAULT_FOCUS);
+  const [focusHydrated, setFocusHydrated] = useState(false);
+
+  // Hydrate the timer after the app state is in (so a session that elapsed
+  // while the app was closed logs against the real state, not EMPTY_STATE).
+  useEffect(() => {
+    if (!hydrated || focusHydrated) return;
+    try {
+      const raw = localStorage.getItem(FOCUS_KEY);
+      if (raw) {
+        const f = { ...DEFAULT_FOCUS, ...JSON.parse(raw) } as FocusState;
+        if (f.running && f.endAt !== null && f.endAt <= Date.now()) {
+          // Finished while the app was closed: count it (no chime — a
+          // surprise sound on page load is hostile) and rest the timer.
+          logFocusSession(f.minutes, f.taskId);
+          setFocus({
+            ...DEFAULT_FOCUS,
+            minutes: f.minutes,
+            remainingMs: f.minutes * 60_000,
+          });
+        } else {
+          setFocus(f);
+        }
+      }
+    } catch {
+      /* ignore corrupt storage */
+    }
+    setFocusHydrated(true);
+  }, [hydrated, focusHydrated, logFocusSession]);
+
+  // Persist the timer on every change (after its own hydration).
+  useEffect(() => {
+    if (!focusHydrated) return;
+    try {
+      localStorage.setItem(FOCUS_KEY, JSON.stringify(focus));
+    } catch {
+      /* storage full / unavailable */
+    }
+  }, [focus, focusHydrated]);
+
+  // Completion watcher: one timeout armed for the exact end moment. Display
+  // ticking happens in the components (derived from endAt), so this is the
+  // only place a session completes — no double-logging.
+  useEffect(() => {
+    if (!focus.running || focus.endAt === null) return;
+    const { minutes, taskId, endAt } = focus;
+    const finish = () => {
+      setFocus((f) => ({
+        ...f,
+        running: false,
+        endAt: null,
+        remainingMs: f.minutes * 60_000,
+      }));
+      logFocusSession(minutes, taskId);
+      if (isSoundEnabled()) playChime();
+    };
+    const left = endAt - Date.now();
+    if (left <= 0) {
+      finish();
+      return;
+    }
+    const id = setTimeout(finish, left + 50);
+    return () => clearTimeout(id);
+  }, [focus, logFocusSession]);
+
+  const startFocus = useCallback(() => {
+    setFocus((f) =>
+      f.running || f.minutes < 1
+        ? f
+        : { ...f, running: true, endAt: Date.now() + f.remainingMs }
+    );
+  }, []);
+
+  const pauseFocus = useCallback(() => {
+    setFocus((f) =>
+      !f.running || f.endAt === null
+        ? f
+        : {
+            ...f,
+            running: false,
+            endAt: null,
+            remainingMs: Math.max(0, f.endAt - Date.now()),
+          }
+    );
+  }, []);
+
+  const resetFocus = useCallback(() => {
+    setFocus((f) => ({
+      ...f,
+      running: false,
+      endAt: null,
+      remainingMs: f.minutes * 60_000,
+    }));
+  }, []);
+
+  // Duration is only editable at full rest — never mid-session (running or
+  // paused), where changing it would silently discard elapsed progress.
+  const setFocusMinutes = useCallback((m: number) => {
+    const clamped = Math.min(
+      MAX_FOCUS_MINUTES,
+      Math.max(0, Math.floor(Number.isFinite(m) ? m : 0))
+    );
+    setFocus((f) =>
+      f.running || f.remainingMs !== f.minutes * 60_000
+        ? f
+        : { ...f, minutes: clamped, remainingMs: clamped * 60_000 }
+    );
+  }, []);
+
+  const setFocusTask = useCallback((id: string | null) => {
+    setFocus((f) => (f.running ? f : { ...f, taskId: id }));
+  }, []);
+
   const toggleHabitToday = useCallback<StoreApi["toggleHabitToday"]>(
     (habitId) => {
       const prev = stateRef.current;
@@ -760,6 +905,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     deleteStudyTask,
     updateStudyTask,
     logFocusSession,
+    focus,
+    startFocus,
+    pauseFocus,
+    resetFocus,
+    setFocusMinutes,
+    setFocusTask,
     resetAll,
     importData,
     celebration,
